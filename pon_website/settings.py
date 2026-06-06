@@ -126,3 +126,14 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 CSRF_TRUSTED_ORIGINS = ['https://achito-app-production.up.railway.app']
+
+import os
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'frontend' / 'dist' / 'assets',
+]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Serve React index.html
+TEMPLATES[0]['DIRS'] = [BASE_DIR / 'frontend' / 'dist']

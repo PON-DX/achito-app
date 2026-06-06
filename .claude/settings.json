@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\kanokpon\\\\Documents\\\\Dgango_Project\\\\pon_website\")"
+    ]
+  }
+}
