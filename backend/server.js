@@ -18,8 +18,9 @@ app.use(cors({
   origin: [
     'http://localhost:5173', 
     'http://localhost:3000',
-    'https://achito-app-production.up.railway.app'
-  ], 
+    'https://achito-app-production.up.railway.app',
+    'https://zoological-enjoyment-production-2e9c.up.railway.app'
+  ],
   credentials: true 
 }));
 app.use(express.json());
