@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-*@@6%q9g&co25c)l5&j!0w%@7@i9^881(%u5wb1m#9exc4!gl1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -76,13 +76,8 @@ WSGI_APPLICATION = 'pon_website.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'HOST': '10.14.1.24\DX_SQL',
-        'PORT' : '',
-        'NAME': '123',
-        'USER' : 'sa',
-        'PASSWORD' : '12345678',
-        'OPTIONS' : {'driver': 'ODBC Driver 17 for SQL Server'},
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
