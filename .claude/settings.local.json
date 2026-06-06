@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\kanokpon\\\\Documents\\\\Dgango_Project\\\\pon_website\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"c:\\\\Users\\\\kanokpon\\\\Documents\\\\Dgango_Project\\\\pon_website\\\\\", \"\"\\) })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\kanokpon\\\\Documents\\\\Dgango_Project\\\\pon_website\\\\backend\\\\\" -Recurse -Depth 2 | Select-Object FullName, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"Folder\"}else{\"File\"}}} | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\kanokpon\\\\Documents\\\\Dgango_Project\\\\pon_website\\\\backend\\\\\" -Force | Select-Object Name, @{Name=\"Type\";Expression={if\\($_.PSIsContainer\\){\"Folder\"}else{\"File\"}}} | Sort-Object Type -Descending)"
+    ]
+  }
+}
