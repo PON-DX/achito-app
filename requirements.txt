@@ -1,5 +1,0 @@
-Django==5.1.6
-gunicorn==21.2.0
-whitenoise==6.9.0
-sqlparse==0.5.3
-asgiref==3.8.1
