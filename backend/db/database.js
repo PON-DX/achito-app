@@ -107,6 +107,14 @@ async function initializeSchema() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS site_content (
+      section TEXT PRIMARY KEY,
+      content JSONB NOT NULL DEFAULT '{}',
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   await seedAdmin();
   await seedSampleAmulets();
   console.log('✅ Database schema initialized.');
