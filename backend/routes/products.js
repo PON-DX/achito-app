@@ -1,34 +1,23 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../cloudinary');
 const { getDb } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Multer storage config
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, unique + path.extname(file.originalname));
-  }
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'achito-products',
+    allowed_formats: ['jpeg', 'jpg', 'png', 'webp'],
+  },
 });
 
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp/;
-    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mime = allowed.test(file.mimetype);
-    if (ext && mime) return cb(null, true);
-    cb(new Error('Only JPEG, PNG, and WebP images are allowed.'));
-  }
 });
 
 // ─── PUBLIC ROUTES ────────────────────────────────────────────────────────────
@@ -79,7 +68,7 @@ router.post('/', authenticateToken, upload.single('image'), (req, res) => {
     return res.status(400).json({ error: 'Name, category, and price are required.' });
   }
 
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  const image_url = req.file ? req.file.path : null;
   const db = getDb();
 
   const result = db.prepare(`
@@ -94,7 +83,7 @@ router.post('/', authenticateToken, upload.single('image'), (req, res) => {
 });
 
 // PUT /api/products/:id
-router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
+router.put('/:id', authenticateToken, upload.single('image'), async (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT * FROM amulets WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Amulet not found.' });
@@ -103,11 +92,20 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
 
   let image_url = existing.image_url;
   if (req.file) {
+    // Delete old Cloudinary image if it exists
     if (existing.image_url) {
-      const oldPath = path.join(__dirname, '..', existing.image_url);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      try {
+        const publicId = existing.image_url
+          .split('/')
+          .slice(-2)
+          .join('/')
+          .replace(/\.[^/.]+$/, '');
+        await cloudinary.uploader.destroy(publicId);
+      } catch (e) {
+        // Non-fatal: old image may already be gone
+      }
     }
-    image_url = `/uploads/${req.file.filename}`;
+    image_url = req.file.path;
   }
 
   const newStock = stock !== undefined
@@ -139,14 +137,22 @@ router.put('/:id', authenticateToken, upload.single('image'), (req, res) => {
 });
 
 // DELETE /api/products/:id
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT * FROM amulets WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Amulet not found.' });
 
   if (existing.image_url) {
-    const imgPath = path.join(__dirname, '..', existing.image_url);
-    if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    try {
+      const publicId = existing.image_url
+        .split('/')
+        .slice(-2)
+        .join('/')
+        .replace(/\.[^/.]+$/, '');
+      await cloudinary.uploader.destroy(publicId);
+    } catch (e) {
+      // Non-fatal
+    }
   }
 
   db.prepare('DELETE FROM amulets WHERE id = ?').run(req.params.id);
