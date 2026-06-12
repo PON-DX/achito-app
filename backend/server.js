@@ -1,14 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { getDb } = require('./db/database');
+const { initializeSchema } = require('./db/database');
 
-const authRoutes     = require('./routes/auth');
-const productRoutes  = require('./routes/products');
-const cartRoutes     = require('./routes/cart');
-const orderRoutes    = require('./routes/orders');
-const userRoutes     = require('./routes/users');
-const chatRoutes     = require('./routes/chat');
+const authRoutes    = require('./routes/auth');
+const productRoutes = require('./routes/products');
+const cartRoutes    = require('./routes/cart');
+const orderRoutes   = require('./routes/orders');
+const userRoutes    = require('./routes/users');
+const chatRoutes    = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,8 +16,6 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-getDb(); // Initialize DB
 
 app.use('/api/auth',     authRoutes);
 app.use('/api/products', productRoutes);
@@ -33,6 +31,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal server error.' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🏮 Achito API running on http://localhost:${PORT}\n`);
-});
+initializeSchema()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`\n🏮 Achito API running on http://localhost:${PORT}\n`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });
