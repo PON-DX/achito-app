@@ -20,6 +20,28 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+async function getAmuletWithImages(id) {
+  const { rows: [amulet] } = await query(`
+    SELECT a.*,
+      COALESCE(json_agg(pi.image_url ORDER BY pi.sort_order) FILTER (WHERE pi.id IS NOT NULL), '[]'::json) AS images
+    FROM amulets a
+    LEFT JOIN product_images pi ON a.id = pi.product_id
+    WHERE a.id = $1
+    GROUP BY a.id
+  `, [id]);
+  return amulet;
+}
+
+async function deleteCloudinaryImages(urls) {
+  const unique = [...new Set(urls.filter(Boolean))];
+  for (const url of unique) {
+    try {
+      const publicId = url.split('/').slice(-2).join('/').replace(/\.[^/.]+$/, '');
+      await cloudinary.uploader.destroy(publicId);
+    } catch {}
+  }
+}
+
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
@@ -56,7 +78,7 @@ router.get('/', async (req, res) => {
 // GET /api/products/:id
 router.get('/:id', async (req, res) => {
   try {
-    const { rows: [amulet] } = await query('SELECT * FROM amulets WHERE id = $1', [req.params.id]);
+    const amulet = await getAmuletWithImages(req.params.id);
     if (!amulet) return res.status(404).json({ error: 'Amulet not found.' });
     res.json(amulet);
   } catch (err) {
@@ -65,14 +87,15 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products
-router.post('/', authenticateToken, upload.single('image'), async (req, res) => {
+router.post('/', authenticateToken, upload.array('images', 10), async (req, res) => {
   try {
     const { name, category, temple, batch_version, year, price, status, description, stock } = req.body;
     if (!name || !category || !price) {
       return res.status(400).json({ error: 'Name, category, and price are required.' });
     }
 
-    const image_url = req.file ? req.file.path : null;
+    const files = req.files || [];
+    const image_url = files.length > 0 ? files[0].path : null;
 
     const { rows: [newAmulet] } = await query(`
       INSERT INTO amulets (name, category, temple, batch_version, year, price, status, description, image_url, stock)
@@ -84,42 +107,57 @@ router.post('/', authenticateToken, upload.single('image'), async (req, res) => 
       stock !== '' && stock !== undefined && stock !== null ? parseInt(stock) : null,
     ]);
 
-    res.status(201).json(newAmulet);
+    for (let i = 0; i < files.length; i++) {
+      await query(
+        'INSERT INTO product_images (product_id, image_url, sort_order) VALUES ($1, $2, $3)',
+        [newAmulet.id, files[i].path, i]
+      );
+    }
+
+    const result = await getAmuletWithImages(newAmulet.id);
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // PUT /api/products/:id
-router.put('/:id', authenticateToken, upload.single('image'), async (req, res) => {
+router.put('/:id', authenticateToken, upload.array('images', 10), async (req, res) => {
   try {
     const { rows: [existing] } = await query('SELECT * FROM amulets WHERE id = $1', [req.params.id]);
     if (!existing) return res.status(404).json({ error: 'Amulet not found.' });
 
     const { name, category, temple, batch_version, year, price, status, description, stock } = req.body;
 
+    const files = req.files || [];
     let image_url = existing.image_url;
-    if (req.file) {
-      if (existing.image_url) {
-        try {
-          const publicId = existing.image_url.split('/').slice(-2).join('/').replace(/\.[^/.]+$/, '');
-          await cloudinary.uploader.destroy(publicId);
-        } catch (e) {}
+
+    if (files.length > 0) {
+      const { rows: oldImages } = await query('SELECT image_url FROM product_images WHERE product_id = $1', [req.params.id]);
+      const urlsToDelete = oldImages.map(r => r.image_url);
+      if (existing.image_url) urlsToDelete.push(existing.image_url);
+      await deleteCloudinaryImages(urlsToDelete);
+      await query('DELETE FROM product_images WHERE product_id = $1', [req.params.id]);
+
+      for (let i = 0; i < files.length; i++) {
+        await query(
+          'INSERT INTO product_images (product_id, image_url, sort_order) VALUES ($1, $2, $3)',
+          [req.params.id, files[i].path, i]
+        );
       }
-      image_url = req.file.path;
+      image_url = files[0].path;
     }
 
     const newStock = stock !== undefined
       ? (stock === '' || stock === null ? null : parseInt(stock))
       : existing.stock;
 
-    const { rows: [updated] } = await query(`
+    await query(`
       UPDATE amulets SET
         name = $1, category = $2, temple = $3, batch_version = $4, year = $5,
         price = $6, status = $7, description = $8, image_url = $9, stock = $10,
         updated_at = NOW()
       WHERE id = $11
-      RETURNING *
     `, [
       name || existing.name,
       category || existing.category,
@@ -134,7 +172,8 @@ router.put('/:id', authenticateToken, upload.single('image'), async (req, res) =
       req.params.id,
     ]);
 
-    res.json(updated);
+    const result = await getAmuletWithImages(req.params.id);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -146,12 +185,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const { rows: [existing] } = await query('SELECT * FROM amulets WHERE id = $1', [req.params.id]);
     if (!existing) return res.status(404).json({ error: 'Amulet not found.' });
 
-    if (existing.image_url) {
-      try {
-        const publicId = existing.image_url.split('/').slice(-2).join('/').replace(/\.[^/.]+$/, '');
-        await cloudinary.uploader.destroy(publicId);
-      } catch (e) {}
-    }
+    const { rows: productImages } = await query('SELECT image_url FROM product_images WHERE product_id = $1', [req.params.id]);
+    const urlsToDelete = productImages.map(r => r.image_url);
+    if (existing.image_url) urlsToDelete.push(existing.image_url);
+    await deleteCloudinaryImages(urlsToDelete);
 
     await query('DELETE FROM amulets WHERE id = $1', [req.params.id]);
     res.json({ message: 'Amulet deleted successfully.' });

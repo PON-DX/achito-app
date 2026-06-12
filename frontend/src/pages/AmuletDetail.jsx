@@ -29,8 +29,10 @@ export default function AmuletDetail() {
   const [cartMsg, setCartMsg] = useState('');
   const [addingToCart, setAddingToCart] = useState(false);
   const [qty, setQty] = useState(1);
+  const [activeIdx, setActiveIdx] = useState(0);
 
   useEffect(() => {
+    setActiveIdx(0);
     axios.get(`/api/products/${id}`)
       .then(res => setAmulet(res.data))
       .catch(() => setError('Amulet not found.'))
@@ -60,6 +62,8 @@ export default function AmuletDetail() {
     </div>
   );
 
+  const images = amulet.images?.length > 0 ? amulet.images : (amulet.image_url ? [amulet.image_url] : []);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       <nav className="flex items-center gap-2 text-sm text-cream-muted mb-8">
@@ -72,7 +76,7 @@ export default function AmuletDetail() {
       </nav>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
-        {/* Image */}
+        {/* Image carousel */}
         <div className="relative group">
           <div
             className="aspect-square rounded-xl overflow-hidden shadow-2xl transition-transform duration-500 hover:scale-[1.012]"
@@ -82,7 +86,7 @@ export default function AmuletDetail() {
               boxShadow: '0 8px 50px rgba(0,0,0,0.65), 0 0 30px rgba(212,175,55,0.06)',
             }}
           >
-            <img src={amulet.image_url || PLACEHOLDER} alt={amulet.name} className="w-full h-full object-cover"
+            <img src={images[activeIdx] || PLACEHOLDER} alt={amulet.name} className="w-full h-full object-cover"
                  onError={e => { e.target.src = PLACEHOLDER; }} />
           </div>
           {amulet.status === 'sold_out' && (
@@ -90,10 +94,45 @@ export default function AmuletDetail() {
               <span className="font-serif text-red-400 text-2xl border-2 border-red-400 px-6 py-2 rotate-[-12deg]">{t('status.sold_out')}</span>
             </div>
           )}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={() => setActiveIdx(i => (i - 1 + images.length) % images.length)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-gold text-lg font-bold transition-all hover:scale-110 opacity-80 hover:opacity-100"
+                style={{ background: 'rgba(10,8,3,0.75)', border: '1px solid rgba(212,175,55,0.3)' }}
+              >‹</button>
+              <button
+                onClick={() => setActiveIdx(i => (i + 1) % images.length)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-gold text-lg font-bold transition-all hover:scale-110 opacity-80 hover:opacity-100"
+                style={{ background: 'rgba(10,8,3,0.75)', border: '1px solid rgba(212,175,55,0.3)' }}
+              >›</button>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {images.map((_, i) => (
+                  <button key={i} onClick={() => setActiveIdx(i)}
+                    className={`rounded-full transition-all ${i === activeIdx ? 'w-3 h-1.5 bg-gold' : 'w-1.5 h-1.5 bg-gold/30 hover:bg-gold/60'}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           <div className="absolute top-3 left-3 w-7 h-7 border-t-2 border-l-2 border-gold/30 rounded-tl transition-all duration-500 group-hover:border-gold/75 group-hover:w-9 group-hover:h-9" />
           <div className="absolute top-3 right-3 w-7 h-7 border-t-2 border-r-2 border-gold/30 rounded-tr transition-all duration-500 group-hover:border-gold/75 group-hover:w-9 group-hover:h-9" />
           <div className="absolute bottom-3 left-3 w-7 h-7 border-b-2 border-l-2 border-gold/30 rounded-bl transition-all duration-500 group-hover:border-gold/75 group-hover:w-9 group-hover:h-9" />
           <div className="absolute bottom-3 right-3 w-7 h-7 border-b-2 border-r-2 border-gold/30 rounded-br transition-all duration-500 group-hover:border-gold/75 group-hover:w-9 group-hover:h-9" />
+
+          {images.length > 1 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+              {images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveIdx(i)}
+                  className={`w-14 h-14 rounded overflow-hidden flex-shrink-0 border-2 transition-all ${i === activeIdx ? 'border-gold' : 'border-charcoal-light opacity-50 hover:opacity-100'}`}
+                >
+                  <img src={img} className="w-full h-full object-cover" onError={e => { e.target.src = PLACEHOLDER; }} alt="" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Details */}

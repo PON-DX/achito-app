@@ -10,15 +10,25 @@ const STATUS_COLOR = { pending:'bg-yellow-900/60 text-yellow-300 border-yellow-7
 // ─── Amulet Modal ─────────────────────────────────────────────────────────────
 function AmuletModal({ item, onClose, onSaved, t }) {
   const [form, setForm] = useState(item ? { ...EMPTY_FORM, ...item, image: null, year: item.year || '', price: item.price || '', stock: item.stock ?? '' } : { ...EMPTY_FORM });
-  const [preview, setPreview] = useState(item?.image_url || null);
+  const [previews, setPreviews] = useState(item?.image_url ? [item.image_url] : []);
+  const [newFiles, setNewFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef();
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setNewFiles(files);
+    setPreviews(files.map(f => URL.createObjectURL(f)));
+    e.target.value = '';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
     const data = new FormData();
-    Object.entries(form).forEach(([k, v]) => { if (k === 'image') { if (v) data.append('image', v); } else data.append(k, v ?? ''); });
+    Object.entries(form).forEach(([k, v]) => { if (k !== 'image') data.append(k, v ?? ''); });
+    newFiles.forEach(f => data.append('images', f));
     try {
       if (item) await axios.put(`/api/products/${item.id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
       else await axios.post('/api/products', data, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -38,14 +48,20 @@ function AmuletModal({ item, onClose, onSaved, t }) {
           {error && <div className="bg-red-900/40 border border-red-700 text-red-300 px-4 py-3 rounded text-sm">{error}</div>}
           <div>
             <label className="label">{t('admin.modal_image')}</label>
-            <div onClick={() => fileRef.current.click()} className="border-2 border-dashed border-charcoal-light hover:border-gold rounded-lg cursor-pointer flex items-center gap-4 p-4 transition-colors group">
-              <img src={preview || PLACEHOLDER} className="w-20 h-20 object-cover rounded border border-charcoal-light flex-shrink-0" onError={e => { e.target.src = PLACEHOLDER; }} />
-              <div>
-                <p className="text-cream-muted text-sm group-hover:text-gold">{form.image ? form.image.name : t('admin.modal_image_click')}</p>
-                <p className="text-charcoal-light text-xs mt-1">{t('admin.modal_image_hint')}</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {previews.map((p, i) => (
+                <img key={i} src={p} className="w-16 h-16 object-cover rounded border border-charcoal-light" onError={e => { e.target.src = PLACEHOLDER; }} alt="" />
+              ))}
+              <div
+                onClick={() => fileRef.current.click()}
+                className="w-16 h-16 border-2 border-dashed border-charcoal-light hover:border-gold rounded cursor-pointer flex items-center justify-center transition-colors"
+                title="เลือกรูปภาพ (เลือกได้หลายรูป)"
+              >
+                <span className="text-gold text-2xl leading-none">+</span>
               </div>
             </div>
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const f = e.target.files[0]; if (f) { setForm(p => ({ ...p, image: f })); setPreview(URL.createObjectURL(f)); } }} className="hidden" />
+            <p className="text-charcoal-light text-xs">{t('admin.modal_image_hint')} — เลือกได้หลายรูป</p>
+            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2"><label className="label">{t('admin.modal_name')}</label><input name="name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="input-field" /></div>

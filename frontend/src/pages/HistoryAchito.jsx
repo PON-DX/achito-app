@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import useScrollReveal from '../hooks/useScrollReveal';
@@ -71,6 +71,65 @@ export default function HistoryAchito() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const fileRef = useRef();
+
+  const [monks, setMonks] = useState([]);
+  const [monkModal, setMonkModal] = useState(null);
+  const [monkForm, setMonkForm] = useState({ name: '', content: '' });
+  const [monkFile, setMonkFile] = useState(null);
+  const [monkPreview, setMonkPreview] = useState('');
+  const [monkSaving, setMonkSaving] = useState(false);
+  const monkFileRef = useRef();
+
+  useEffect(() => {
+    axios.get('/api/history').then(res => setMonks(res.data)).catch(() => {});
+  }, []);
+
+  const openMonkModal = (monk) => {
+    setMonkForm({ name: monk?.name || '', content: monk?.content || '' });
+    setMonkFile(null);
+    setMonkPreview('');
+    setMonkModal(monk || { id: null });
+  };
+
+  const handleMonkImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setMonkFile(file);
+    setMonkPreview(URL.createObjectURL(file));
+  };
+
+  const saveMonk = async () => {
+    if (!monkForm.name.trim()) { alert('กรุณากรอกชื่อพระเกจิ'); return; }
+    setMonkSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append('name', monkForm.name);
+      fd.append('content', monkForm.content);
+      if (monkFile) fd.append('image', monkFile);
+      if (monkModal.id) {
+        await axios.put(`/api/history/${monkModal.id}`, fd);
+      } else {
+        await axios.post('/api/history', fd);
+      }
+      const res = await axios.get('/api/history');
+      setMonks(res.data);
+      setMonkModal(null);
+    } catch (err) {
+      alert(err.response?.data?.error || 'เกิดข้อผิดพลาด');
+    } finally {
+      setMonkSaving(false);
+    }
+  };
+
+  const deleteMonk = async (id) => {
+    if (!window.confirm('ลบประวัติพระเกจิรายนี้?')) return;
+    try {
+      await axios.delete(`/api/history/${id}`);
+      setMonks(prev => prev.filter(m => m.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.error || 'เกิดข้อผิดพลาด');
+    }
+  };
 
   const openEdit = () => {
     setForm({
@@ -186,6 +245,84 @@ export default function HistoryAchito() {
             <span>✦</span><span>☸</span><span>✦</span><span>☸</span><span>✦</span>
           </div>
         </div>
+      </section>
+
+      {/* MONK HISTORY */}
+      <section className="relative max-w-4xl mx-auto px-4 pt-4 pb-2">
+        <RevealBlock>
+          <div
+            className="rounded-2xl p-8 mb-10"
+            style={{
+              background: 'rgba(20,15,5,0.65)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(212,175,55,0.18)',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,175,55,0.08)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🧘</span>
+                <div>
+                  <p className="text-gold/50 text-xs tracking-widest uppercase">ผู้สร้าง</p>
+                  <h2 className="font-serif text-2xl text-cream">พระเกจิ</h2>
+                </div>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => openMonkModal(null)}
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-90"
+                  style={{ background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.35)', color: '#D4AF37' }}
+                >
+                  + เพิ่มประวัติ
+                </button>
+              )}
+            </div>
+
+            {monks.length === 0 ? (
+              <p className="text-cream/50 text-sm text-center py-6">ยังไม่มีประวัติพระเกจิ</p>
+            ) : (
+              <div className="space-y-5">
+                {monks.map(monk => (
+                  <div
+                    key={monk.id}
+                    className="flex gap-4 rounded-xl p-5 transition-all duration-300 group hover:scale-[1.005]"
+                    style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}
+                  >
+                    {monk.image_url && (
+                      <img
+                        src={monk.image_url}
+                        alt={monk.name}
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gold/30 flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-serif text-gold text-lg">{monk.name}</h3>
+                        {isAdmin && (
+                          <div className="flex gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => openMonkModal(monk)}
+                              className="text-xs px-2 py-1 rounded border border-gold/20 text-gold/60 hover:text-gold transition-colors"
+                            >
+                              แก้ไข
+                            </button>
+                            <button
+                              onClick={() => deleteMonk(monk.id)}
+                              className="text-xs px-2 py-1 rounded border border-red-900/30 text-red-400/60 hover:text-red-400 transition-colors"
+                            >
+                              ลบ
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-cream/75 text-sm leading-7 mt-2 whitespace-pre-line">{monk.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </RevealBlock>
       </section>
 
       {/* HISTORY CARD */}
@@ -354,6 +491,75 @@ export default function HistoryAchito() {
         </RevealBlock>
 
       </section>
+
+      {/* Monk Modal */}
+      {monkModal !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
+            style={{ background: '#14100a', border: '1px solid rgba(212,175,55,0.25)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}
+          >
+            <h3 className="font-serif text-xl text-gold mb-5">
+              {monkModal.id ? 'แก้ไขประวัติพระเกจิ' : 'เพิ่มประวัติพระเกจิ'}
+            </h3>
+
+            <div className="mb-4 text-center">
+              {(monkPreview || monkModal.image_url) && (
+                <img
+                  src={monkPreview || monkModal.image_url}
+                  alt=""
+                  className="w-24 h-24 rounded-full object-cover mx-auto mb-2 border-2 border-gold/30"
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              )}
+              <button
+                onClick={() => monkFileRef.current.click()}
+                className="text-gold/70 hover:text-gold text-xs border border-gold/20 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                {monkPreview || monkModal.image_url ? 'เปลี่ยนรูป' : 'เลือกรูป'}
+              </button>
+              <input ref={monkFileRef} type="file" accept="image/*" className="hidden" onChange={handleMonkImageChange} />
+            </div>
+
+            <label className="block text-gold/60 text-xs mb-1">ชื่อพระเกจิ *</label>
+            <input
+              value={monkForm.name}
+              onChange={e => setMonkForm(f => ({ ...f, name: e.target.value }))}
+              className="w-full bg-white/5 border border-gold/20 rounded-lg px-3 py-2 text-cream text-sm mb-4 focus:outline-none focus:border-gold/50"
+              placeholder="เช่น พ่อท่านเจิม อชิโต"
+            />
+
+            <label className="block text-gold/60 text-xs mb-1">ประวัติ</label>
+            <textarea
+              value={monkForm.content}
+              onChange={e => setMonkForm(f => ({ ...f, content: e.target.value }))}
+              rows={6}
+              className="w-full bg-white/5 border border-gold/20 rounded-lg px-3 py-2 text-cream text-sm mb-5 focus:outline-none focus:border-gold/50 resize-none leading-relaxed"
+              placeholder="ประวัติและเกร็ดน่ารู้..."
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMonkModal(null)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-cream/50 text-sm hover:border-white/20 transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={saveMonk}
+                disabled={monkSaving}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #D4AF37, #B8941F)', color: '#0a0803' }}
+              >
+                {monkSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editing && (

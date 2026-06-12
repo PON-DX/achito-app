@@ -10,6 +10,7 @@ const orderRoutes   = require('./routes/orders');
 const userRoutes    = require('./routes/users');
 const chatRoutes    = require('./routes/chat');
 const contentRoutes = require('./routes/content');
+const historyRoutes = require('./routes/history');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ app.use('/api/orders',   orderRoutes);
 app.use('/api/users',    userRoutes);
 app.use('/api/chat',     chatRoutes);
 app.use('/api/content',  contentRoutes);
+app.use('/api/history',  historyRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 app.use((req, res) => res.status(404).json({ error: 'Route not found.' }));

@@ -115,6 +115,25 @@ async function initializeSchema() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS monk_history (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      image_url TEXT,
+      content TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS product_images (
+      id SERIAL PRIMARY KEY,
+      product_id INTEGER NOT NULL REFERENCES amulets(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+
   await seedAdmin();
   await seedSampleAmulets();
   console.log('✅ Database schema initialized.');
