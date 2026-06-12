@@ -40,6 +40,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-5">
             <Link to="/" className={`text-sm font-medium transition-colors duration-200 ${isActive('/')}`}>{t('nav.collection')}</Link>
             <Link to="/history/achito" className={`text-sm font-medium transition-colors duration-200 ${isActive('/history/achito')}`}>{t('nav.history')}</Link>
+            <Link to="/catalog" className={`text-sm font-medium transition-colors duration-200 ${isActive('/catalog')}`}>ทำเนียบพิมพ์พระ</Link>
             <Link to="/track" className={`text-sm font-medium transition-colors duration-200 ${isActive('/track')}`}>{t('nav.trackOrder')}</Link>
             {isAdmin && <Link to="/admin" className={`text-sm font-medium transition-colors duration-200 ${isActive('/admin')}`}>{t('nav.dashboard')}</Link>}
 
@@ -136,6 +137,7 @@ export default function Navbar() {
           <div className="md:hidden pb-4 border-t border-charcoal-light pt-4 space-y-3">
             <Link to="/" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.collection')}</Link>
             <Link to="/history/achito" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.history')}</Link>
+            <Link to="/catalog" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>ทำเนียบพิมพ์พระ</Link>
             <Link to="/track" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.trackOrder')}</Link>
             {isAdmin && <Link to="/admin" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.dashboard')}</Link>}
             {user && !isAdmin && <Link to="/my-orders" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.myOrders')}</Link>}

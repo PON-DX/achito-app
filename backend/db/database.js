@@ -134,6 +134,17 @@ async function initializeSchema() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS amulet_catalog (
+      id SERIAL PRIMARY KEY,
+      group_name TEXT NOT NULL,
+      name TEXT NOT NULL,
+      image_url TEXT,
+      description TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   await seedAdmin();
   await seedSampleAmulets();
   console.log('✅ Database schema initialized.');

@@ -21,6 +21,7 @@ import Chat from './pages/Chat';
 import AdminChat from './pages/AdminChat';
 import HistoryAchito from './pages/HistoryAchito';
 import CheckAmulet from './pages/CheckAmulet';
+import AmuletCatalog from './pages/AmuletCatalog';
 
 function Footer() {
   const { t } = useLang();
@@ -64,6 +65,7 @@ export default function App() {
                   <Route path="/profile/sor" element={<ProfileSor />} />
                   <Route path="/history/achito" element={<HistoryAchito />} />
                   <Route path="/check-amulet" element={<CheckAmulet />} />
+                  <Route path="/catalog" element={<AmuletCatalog />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/admin/chat" element={<ProtectedRoute adminOnly><AdminChat /></ProtectedRoute>} />
                   <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
