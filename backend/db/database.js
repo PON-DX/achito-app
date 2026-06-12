@@ -135,6 +135,17 @@ async function initializeSchema() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS monk_history_images (
+      id SERIAL PRIMARY KEY,
+      monk_id INTEGER NOT NULL REFERENCES monk_history(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      caption TEXT,
+      sort_order INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS amulet_catalog (
       id SERIAL PRIMARY KEY,
       group_name TEXT NOT NULL,

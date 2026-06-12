@@ -80,6 +80,14 @@ export default function HistoryAchito() {
   const [monkSaving, setMonkSaving] = useState(false);
   const monkFileRef = useRef();
 
+  const [posterModal, setPosterModal] = useState(null);
+  const [posterFile, setPosterFile] = useState(null);
+  const [posterPreview, setPosterPreview] = useState('');
+  const [posterCaption, setPosterCaption] = useState('');
+  const [posterSaving, setPosterSaving] = useState(false);
+  const [lightbox, setLightbox] = useState(null);
+  const posterFileRef = useRef();
+
   useEffect(() => {
     axios.get('/api/history').then(res => setMonks(res.data)).catch(() => {});
   }, []);
@@ -126,6 +134,49 @@ export default function HistoryAchito() {
     try {
       await axios.delete(`/api/history/${id}`);
       setMonks(prev => prev.filter(m => m.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.error || 'เกิดข้อผิดพลาด');
+    }
+  };
+
+  const openPosterModal = (monkId) => {
+    setPosterFile(null);
+    setPosterPreview('');
+    setPosterCaption('');
+    setPosterModal({ monkId });
+  };
+
+  const handlePosterFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPosterFile(file);
+    setPosterPreview(URL.createObjectURL(file));
+  };
+
+  const addPoster = async () => {
+    if (!posterFile) { alert('กรุณาเลือกรูปภาพ'); return; }
+    setPosterSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', posterFile);
+      fd.append('caption', posterCaption);
+      await axios.post(`/api/history/${posterModal.monkId}/images`, fd);
+      const res = await axios.get('/api/history');
+      setMonks(res.data);
+      setPosterModal(null);
+    } catch (err) {
+      alert(err.response?.data?.error || 'เกิดข้อผิดพลาด');
+    } finally {
+      setPosterSaving(false);
+    }
+  };
+
+  const deletePoster = async (imageId) => {
+    if (!window.confirm('ลบรูปโปสเตอร์นี้?')) return;
+    try {
+      await axios.delete(`/api/history/images/${imageId}`);
+      const res = await axios.get('/api/history');
+      setMonks(res.data);
     } catch (err) {
       alert(err.response?.data?.error || 'เกิดข้อผิดพลาด');
     }
@@ -285,38 +336,89 @@ export default function HistoryAchito() {
                 {monks.map(monk => (
                   <div
                     key={monk.id}
-                    className="flex gap-4 rounded-xl p-5 transition-all duration-300 group hover:scale-[1.005]"
+                    className="rounded-xl p-5 transition-all duration-300"
                     style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}
                   >
-                    {monk.image_url && (
-                      <img
-                        src={monk.image_url}
-                        alt={monk.name}
-                        className="w-20 h-20 rounded-full object-cover border-2 border-gold/30 flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-serif text-gold text-lg">{monk.name}</h3>
-                        {isAdmin && (
-                          <div className="flex gap-1.5 flex-shrink-0">
-                            <button
-                              onClick={() => openMonkModal(monk)}
-                              className="text-xs px-2 py-1 rounded border border-gold/20 text-gold/60 hover:text-gold transition-colors"
-                            >
-                              แก้ไข
-                            </button>
-                            <button
-                              onClick={() => deleteMonk(monk.id)}
-                              className="text-xs px-2 py-1 rounded border border-red-900/30 text-red-400/60 hover:text-red-400 transition-colors"
-                            >
-                              ลบ
-                            </button>
+                    {/* Profile row */}
+                    <div className="flex gap-4">
+                      {monk.image_url && (
+                        <img
+                          src={monk.image_url}
+                          alt={monk.name}
+                          className="w-20 h-20 rounded-full object-cover border-2 border-gold/30 flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-serif text-gold text-lg">{monk.name}</h3>
+                          {isAdmin && (
+                            <div className="flex gap-1.5 flex-shrink-0">
+                              <button
+                                onClick={() => openMonkModal(monk)}
+                                className="text-xs px-2 py-1 rounded border border-gold/20 text-gold/60 hover:text-gold transition-colors"
+                              >
+                                แก้ไข
+                              </button>
+                              <button
+                                onClick={() => deleteMonk(monk.id)}
+                                className="text-xs px-2 py-1 rounded border border-red-900/30 text-red-400/60 hover:text-red-400 transition-colors"
+                              >
+                                ลบ
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-cream/75 text-sm leading-7 mt-2 whitespace-pre-line">{monk.content}</p>
+                      </div>
+                    </div>
+
+                    {/* Poster images section */}
+                    {(monk.images?.length > 0 || isAdmin) && (
+                      <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(212,175,55,0.08)' }}>
+                        {monk.images?.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-3">
+                            {monk.images.map(img => (
+                              <div
+                                key={img.id}
+                                className="relative group/img rounded-lg overflow-hidden cursor-pointer"
+                                style={{ aspectRatio: '3/4', border: '1px solid rgba(212,175,55,0.15)' }}
+                              >
+                                <img
+                                  src={img.image_url}
+                                  alt={img.caption || ''}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                  onClick={() => setLightbox(img)}
+                                />
+                                {img.caption && (
+                                  <div className="absolute bottom-0 inset-x-0 bg-black/65 px-2 py-1">
+                                    <p className="text-cream/70 text-[10px] leading-tight line-clamp-2">{img.caption}</p>
+                                  </div>
+                                )}
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => deletePoster(img.id)}
+                                    className="absolute top-1 right-1 w-5 h-5 rounded bg-red-900/90 text-red-300 text-xs leading-none flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-red-700"
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => openPosterModal(monk.id)}
+                            className="text-xs px-3 py-1.5 rounded-lg transition-all"
+                            style={{ border: '1px solid rgba(212,175,55,0.22)', color: 'rgba(212,175,55,0.55)' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#D4AF37'; e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(212,175,55,0.55)'; e.currentTarget.style.borderColor = 'rgba(212,175,55,0.22)'; }}
+                          >
+                            + เพิ่มรูปโปสเตอร์
+                          </button>
+                        )}
                       </div>
-                      <p className="text-cream/75 text-sm leading-7 mt-2 whitespace-pre-line">{monk.content}</p>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -555,6 +657,101 @@ export default function HistoryAchito() {
                 style={{ background: 'linear-gradient(135deg, #D4AF37, #B8941F)', color: '#0a0803' }}
               >
                 {monkSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.93)' }}
+          onClick={() => setLightbox(null)}
+        >
+          <div className="relative max-w-xl w-full" onClick={e => e.stopPropagation()}>
+            <img
+              src={lightbox.image_url}
+              alt={lightbox.caption || ''}
+              className="w-full rounded-xl object-contain"
+              style={{ maxHeight: '80vh' }}
+            />
+            {lightbox.caption && (
+              <p className="text-center text-cream/65 text-sm mt-3">{lightbox.caption}</p>
+            )}
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full flex items-center justify-center text-cream/60 hover:text-cream transition-colors"
+              style={{ background: '#1a130a', border: '1px solid rgba(255,255,255,0.15)' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Poster Upload Modal */}
+      {posterModal && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.87)', backdropFilter: 'blur(6px)' }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl p-6"
+            style={{ background: '#14100a', border: '1px solid rgba(212,175,55,0.25)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}
+          >
+            <h3 className="font-serif text-xl text-gold mb-5">เพิ่มรูปโปสเตอร์</h3>
+
+            <div
+              className="w-full rounded-xl overflow-hidden mb-4 cursor-pointer relative flex items-center justify-center"
+              style={{ aspectRatio: '3/4', border: '2px dashed rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.03)' }}
+              onClick={() => posterFileRef.current.click()}
+            >
+              {posterPreview ? (
+                <>
+                  <img src={posterPreview} className="w-full h-full object-cover absolute inset-0" alt="" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs border border-white/30 px-3 py-1.5 rounded-lg">เปลี่ยนรูป</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-gold/20 text-4xl select-none">🖼</span>
+                  <p className="text-cream/25 text-xs">คลิกเพื่อเลือกรูปโปสเตอร์</p>
+                </div>
+              )}
+            </div>
+            <input
+              ref={posterFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePosterFileChange}
+            />
+
+            <label className="block text-gold/60 text-xs mb-1">คำอธิบายใต้รูป</label>
+            <input
+              value={posterCaption}
+              onChange={e => setPosterCaption(e.target.value)}
+              className="w-full bg-white/5 border border-gold/20 rounded-lg px-3 py-2 text-cream text-sm mb-5 focus:outline-none focus:border-gold/50"
+              placeholder="เช่น รูปงานบุญ ปี 2563"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPosterModal(null)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-cream/50 text-sm hover:border-white/20 transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={addPoster}
+                disabled={posterSaving}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #D4AF37, #B8941F)', color: '#0a0803' }}
+              >
+                {posterSaving ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>
             </div>
           </div>
