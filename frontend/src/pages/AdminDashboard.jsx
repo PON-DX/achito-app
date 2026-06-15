@@ -3,80 +3,172 @@ import axios from 'axios';
 import { useLang } from '../contexts/LanguageContext';
 
 const CATEGORIES = ['Powder', 'Metal', 'Statues', 'Monk', 'Talisman', 'Frame', 'Case', 'Necklace', 'Accessory'];
-const EMPTY_FORM = { name: '', category: 'Powder', temple: '', batch_version: '', year: '', price: '', status: 'available', description: '', stock: '', image: null };
-const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%232D2D2D'/%3E%3Ctext x='100' y='108' font-family='serif' font-size='48' fill='%23D4AF37' text-anchor='middle'%3E%E2%98%B8%3C/text%3E%3C/svg%3E";
-const STATUS_COLOR = { pending:'bg-yellow-900/60 text-yellow-300 border-yellow-700', confirmed:'bg-blue-900/60 text-blue-300 border-blue-700', shipped:'bg-purple-900/60 text-purple-300 border-purple-700', delivered:'bg-emerald-900/60 text-emerald-300 border-emerald-700', cancelled:'bg-red-900/60 text-red-300 border-red-700' };
+const EMPTY_FORM = { name: '', category: 'Powder', temple: '', batch_version: '', year: '', price: '', status: 'available', description: '', stock: '' };
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%230e0b03'/%3E%3Ctext x='100' y='115' font-family='serif' font-size='60' fill='%23D4AF37' text-anchor='middle' opacity='0.25'%3E%E2%98%B8%3C/text%3E%3C/svg%3E";
 
-// ─── Amulet Modal ─────────────────────────────────────────────────────────────
+const ORDER_STATUS_STYLE = {
+  pending:   { bg: 'rgba(180,130,0,0.15)',   border: 'rgba(180,130,0,0.4)',   text: '#f5c842' },
+  confirmed: { bg: 'rgba(30,80,200,0.15)',   border: 'rgba(80,120,240,0.4)',  text: '#7eaaff' },
+  shipped:   { bg: 'rgba(120,40,200,0.15)',  border: 'rgba(160,80,240,0.4)', text: '#c084fc' },
+  delivered: { bg: 'rgba(10,120,60,0.18)',   border: 'rgba(40,200,110,0.35)',text: '#4ade80' },
+  cancelled: { bg: 'rgba(160,20,20,0.18)',   border: 'rgba(240,80,80,0.35)', text: '#f87171' },
+};
+
+/* ── Shared helpers ──────────────────────────────────────────────────────── */
+const G = {
+  pkg:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
+  list:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
+  users: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+  edit:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+  trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
+  plus:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>,
+  search:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+  upload:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>,
+  img:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+};
+
+function DarkInput({ label, type = 'text', as: Tag = 'input', children, className = '', ...props }) {
+  const base = {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(212,175,55,0.14)',
+    borderRadius: '10px',
+    color: '#f5f0e8',
+    fontSize: '13px',
+    padding: '10px 14px',
+    width: '100%',
+    outline: 'none',
+    transition: 'border-color .2s, box-shadow .2s',
+  };
+  return (
+    <div className={className}>
+      {label && <label style={{ display: 'block', fontSize: '10px', color: 'rgba(212,175,55,0.5)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>}
+      {Tag === 'input'
+        ? <input type={type} style={base} onFocus={e => { e.target.style.borderColor = 'rgba(212,175,55,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(212,175,55,0.14)'; e.target.style.boxShadow = 'none'; }} {...props} />
+        : <Tag style={{ ...base, resize: 'none' }} onFocus={e => { e.target.style.borderColor = 'rgba(212,175,55,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.06)'; }} onBlur={e => { e.target.style.borderColor = 'rgba(212,175,55,0.14)'; e.target.style.boxShadow = 'none'; }} {...props}>{children}</Tag>
+      }
+    </div>
+  );
+}
+
+/* ── Amulet Modal ────────────────────────────────────────────────────────── */
 function AmuletModal({ item, onClose, onSaved, t }) {
-  const [form, setForm] = useState(item ? { ...EMPTY_FORM, ...item, image: null, year: item.year || '', price: item.price || '', stock: item.stock ?? '' } : { ...EMPTY_FORM });
-  const [previews, setPreviews] = useState(item?.image_url ? [item.image_url] : []);
+  const [form, setForm] = useState(item
+    ? { ...EMPTY_FORM, ...item, year: item.year || '', price: item.price || '', stock: item.stock ?? '' }
+    : { ...EMPTY_FORM });
+  const [previews, setPreviews] = useState(item?.images?.length ? item.images : item?.image_url ? [item.image_url] : []);
   const [newFiles, setNewFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef();
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    setNewFiles(files);
-    setPreviews(files.map(f => URL.createObjectURL(f)));
-    e.target.value = '';
+  const applyFiles = (files) => {
+    const imgs = files.filter(f => f.type.startsWith('image/'));
+    if (!imgs.length) return;
+    setNewFiles(imgs);
+    setPreviews(imgs.map(f => URL.createObjectURL(f)));
   };
+
+  const handleDrop = (e) => { e.preventDefault(); setDragging(false); applyFiles(Array.from(e.dataTransfer.files)); };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
     const data = new FormData();
-    Object.entries(form).forEach(([k, v]) => { if (k !== 'image') data.append(k, v ?? ''); });
+    Object.entries(form).forEach(([k, v]) => data.append(k, v ?? ''));
     newFiles.forEach(f => data.append('images', f));
     try {
       if (item) await axios.put(`/api/products/${item.id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
-      else await axios.post('/api/products', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+      else       await axios.post('/api/products', data, { headers: { 'Content-Type': 'multipart/form-data' } });
       onSaved();
-    } catch (err) { setError(err.response?.data?.error || 'Save failed.'); }
+    } catch (err) { setError(err.response?.data?.error || 'บันทึกไม่สำเร็จ'); }
     finally { setSaving(false); }
   };
 
+  const modalBg = { background: '#0c0904', border: '1px solid rgba(212,175,55,0.18)', boxShadow: '0 40px 120px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.5)' };
+
   return (
-    <div className="fixed inset-0 z-50 bg-charcoal-dark/80 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-charcoal border border-charcoal-light rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-light sticky top-0 bg-charcoal z-10">
-          <h2 className="font-serif text-xl text-cream">{item ? t('common.edit') : t('admin.add_amulet')}</h2>
-          <button onClick={onClose} className="text-cream-muted hover:text-cream text-xl w-8 h-8 flex items-center justify-center">✕</button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
-          {error && <div className="bg-red-900/40 border border-red-700 text-red-300 px-4 py-3 rounded text-sm">{error}</div>}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl" style={modalBg}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-7 py-5 sticky top-0 z-10 rounded-t-2xl" style={{ background: '#0c0904', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
           <div>
-            <label className="label">{t('admin.modal_image')}</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {previews.map((p, i) => (
-                <img key={i} src={p} className="w-16 h-16 object-cover rounded border border-charcoal-light" onError={e => { e.target.src = PLACEHOLDER; }} alt="" />
-              ))}
+            <h2 className="font-serif text-xl text-cream">{item ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h2>
+            <p style={{ fontSize: '11px', color: 'rgba(212,175,55,0.4)', marginTop: '2px' }}>กรอกข้อมูลให้ครบถ้วนแล้วกดบันทึก</p>
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', border: 'none', cursor: 'pointer', fontSize: 15 }}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="px-7 py-6 space-y-5">
+            {error && <div style={{ background: 'rgba(200,40,40,0.12)', border: '1px solid rgba(200,60,60,0.35)', borderRadius: 10, padding: '12px 16px', color: '#f87171', fontSize: 13 }}>{error}</div>}
+
+            {/* Image upload — drag & drop */}
+            <div>
+              <p style={{ fontSize: '10px', color: 'rgba(212,175,55,0.5)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>รูปภาพสินค้า</p>
               <div
+                onDrop={handleDrop}
+                onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
                 onClick={() => fileRef.current.click()}
-                className="w-16 h-16 border-2 border-dashed border-charcoal-light hover:border-gold rounded cursor-pointer flex items-center justify-center transition-colors"
-                title="เลือกรูปภาพ (เลือกได้หลายรูป)"
+                style={{
+                  borderRadius: 12, border: `2px dashed ${dragging ? 'rgba(212,175,55,0.65)' : 'rgba(212,175,55,0.18)'}`,
+                  background: dragging ? 'rgba(212,175,55,0.05)' : 'rgba(255,255,255,0.02)',
+                  padding: 20, textAlign: 'center', cursor: 'pointer',
+                  transition: 'border-color .2s, background .2s',
+                }}
               >
-                <span className="text-gold text-2xl leading-none">+</span>
+                {previews.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                    {previews.map((p, i) => (
+                      <img key={i} src={p} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(212,175,55,0.2)' }} onError={e => { e.target.src = PLACEHOLDER; }} alt="" />
+                    ))}
+                    <div style={{ width: 72, height: 72, borderRadius: 8, border: '1px dashed rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(212,175,55,0.4)', fontSize: 22 }}>+</div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px 0' }}>
+                    <div style={{ width: 40, height: 40, margin: '0 auto 10px', color: 'rgba(212,175,55,0.2)' }}>{G.upload}</div>
+                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>ลากรูปมาวางที่นี่ หรือคลิกเพื่อเลือก</p>
+                    <p style={{ color: 'rgba(255,255,255,0.12)', fontSize: 11, marginTop: 4 }}>JPG · PNG · WEBP — เลือกได้หลายรูป</p>
+                  </div>
+                )}
               </div>
+              <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e => applyFiles(Array.from(e.target.files))} className="hidden" />
             </div>
-            <p className="text-charcoal-light text-xs">{t('admin.modal_image_hint')} — เลือกได้หลายรูป</p>
-            <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+
+            {/* Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <DarkInput className="sm:col-span-2" label="ชื่อพระ *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required placeholder="เช่น พระผงพรายสมุทร รุ่นแรก" />
+              <div>
+                <p style={{ fontSize: '10px', color: 'rgba(212,175,55,0.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>หมวดหมู่</p>
+                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '10px 14px', width: '100%', outline: 'none' }}>
+                  {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#0c0904' }}>{t(`categories.${c}`)}</option>)}
+                </select>
+              </div>
+              <div>
+                <p style={{ fontSize: '10px', color: 'rgba(212,175,55,0.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>สถานะ</p>
+                <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '10px 14px', width: '100%', outline: 'none' }}>
+                  <option value="available" style={{ background: '#0c0904' }}>{t('status.available')}</option>
+                  <option value="sold_out"  style={{ background: '#0c0904' }}>{t('status.sold_out')}</option>
+                </select>
+              </div>
+              <DarkInput label="วัด / สำนัก" value={form.temple}        onChange={e => setForm(p => ({ ...p, temple: e.target.value }))} placeholder="เช่น วัดสุทธิวาส" />
+              <DarkInput label="รุ่น / พิมพ์"  value={form.batch_version} onChange={e => setForm(p => ({ ...p, batch_version: e.target.value }))} placeholder="เช่น รุ่นแรก" />
+              <DarkInput label="ปี พ.ศ."    type="number" value={form.year}  onChange={e => setForm(p => ({ ...p, year: e.target.value }))} placeholder="เช่น 2563" />
+              <DarkInput label="ราคา (บาท) *" type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required placeholder="0" />
+              <DarkInput label="จำนวนคงเหลือ" type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} placeholder="ว่างไว้ = ไม่จำกัด" />
+              <DarkInput as="textarea" className="sm:col-span-2" label="รายละเอียด" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="คุณสมบัติ ประวัติ ความศักดิ์สิทธิ์..." />
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2"><label className="label">{t('admin.modal_name')}</label><input name="name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required className="input-field" /></div>
-            <div><label className="label">{t('admin.modal_category')}</label><select name="category" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="input-field">{CATEGORIES.map(c => <option key={c} value={c}>{t(`categories.${c}`)}</option>)}</select></div>
-            <div><label className="label">{t('admin.modal_status')}</label><select name="status" value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="input-field"><option value="available">{t('status.available')}</option><option value="sold_out">{t('status.sold_out')}</option></select></div>
-            <div><label className="label">{t('admin.modal_temple')}</label><input value={form.temple} onChange={e => setForm(p => ({ ...p, temple: e.target.value }))} className="input-field" /></div>
-            <div><label className="label">{t('admin.modal_batch')}</label><input value={form.batch_version} onChange={e => setForm(p => ({ ...p, batch_version: e.target.value }))} className="input-field" /></div>
-            <div><label className="label">{t('admin.modal_year')}</label><input type="number" value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))} className="input-field" /></div>
-            <div><label className="label">{t('admin.modal_price')}</label><input type="number" min="0" required value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} className="input-field" /></div>
-            <div><label className="label">{t('admin.modal_stock')}</label><input type="number" min="0" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} className="input-field" placeholder="∞" /></div>
-            <div className="sm:col-span-2"><label className="label">{t('admin.modal_desc')}</label><textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} className="input-field resize-none" /></div>
-          </div>
-          <div className="flex gap-3 justify-end pt-2 border-t border-charcoal-light">
-            <button type="button" onClick={onClose} className="btn-outline-gold px-5">{t('common.cancel')}</button>
-            <button type="submit" disabled={saving} className="btn-gold px-8">{saving ? '...' : t('common.save')}</button>
+
+          {/* Footer */}
+          <div className="flex gap-3 px-7 pb-7">
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', background: 'none', fontSize: 13, cursor: 'pointer', transition: 'border-color .2s' }}>ยกเลิก</button>
+            <button type="submit" disabled={saving} style={{ flex: 1, padding: '11px 0', borderRadius: 12, background: saving ? 'rgba(212,175,55,0.4)' : 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#0a0803', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', border: 'none' }}>
+              {saving ? 'กำลังบันทึก...' : 'บันทึกสินค้า'}
+            </button>
           </div>
         </form>
       </div>
@@ -84,7 +176,7 @@ function AmuletModal({ item, onClose, onSaved, t }) {
   );
 }
 
-// ─── Add Admin Modal ───────────────────────────────────────────────────────────
+/* ── Add Admin Modal ─────────────────────────────────────────────────────── */
 function AddAdminModal({ onClose, onSaved, t }) {
   const [form, setForm] = useState({ username: '', password: '', email: '', first_name: '', last_name: '' });
   const [saving, setSaving] = useState(false);
@@ -92,32 +184,32 @@ function AddAdminModal({ onClose, onSaved, t }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
-    try {
-      await axios.post('/api/users', form);
-      onSaved();
-    } catch (err) { setError(err.response?.data?.error || 'Failed to create admin.'); }
+    try { await axios.post('/api/users', form); onSaved(); }
+    catch (err) { setError(err.response?.data?.error || 'ไม่สามารถสร้าง Admin ได้'); }
     finally { setSaving(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-charcoal-dark/80 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-charcoal border border-charcoal-light rounded-xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-light">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md rounded-2xl" style={{ background: '#0c0904', border: '1px solid rgba(212,175,55,0.18)', boxShadow: '0 40px 100px rgba(0,0,0,0.85)' }}>
+        <div className="flex items-center justify-between px-7 py-5" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
           <h2 className="font-serif text-xl text-cream">{t('admin.new_admin_title')}</h2>
-          <button onClick={onClose} className="text-cream-muted hover:text-cream text-xl w-8 h-8 flex items-center justify-center">✕</button>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>✕</button>
         </div>
-        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
-          {error && <div className="bg-red-900/40 border border-red-700 text-red-300 px-4 py-3 rounded text-sm">{error}</div>}
+        <form onSubmit={handleSubmit} className="px-7 py-6 space-y-4">
+          {error && <div style={{ background: 'rgba(200,40,40,0.12)', border: '1px solid rgba(200,60,60,0.35)', borderRadius: 10, padding: '10px 14px', color: '#f87171', fontSize: 13 }}>{error}</div>}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">{t('auth.first_name')}</label><input value={form.first_name} onChange={e => setForm(p => ({ ...p, first_name: e.target.value }))} className="input-field" /></div>
-            <div><label className="label">{t('auth.last_name')}</label><input value={form.last_name} onChange={e => setForm(p => ({ ...p, last_name: e.target.value }))} className="input-field" /></div>
+            <DarkInput label={t('auth.first_name')} value={form.first_name} onChange={e => setForm(p => ({ ...p, first_name: e.target.value }))} />
+            <DarkInput label={t('auth.last_name')}  value={form.last_name}  onChange={e => setForm(p => ({ ...p, last_name: e.target.value }))} />
           </div>
-          <div><label className="label">{t('auth.username')} *</label><input required value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} className="input-field" /></div>
-          <div><label className="label">{t('auth.email')}</label><input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="input-field" /></div>
-          <div><label className="label">{t('auth.password')} *</label><input type="password" required value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} className="input-field" placeholder="อย่างน้อย 6 ตัวอักษร" /></div>
-          <div className="flex gap-3 justify-end pt-2 border-t border-charcoal-light">
-            <button type="button" onClick={onClose} className="btn-outline-gold px-5">{t('common.cancel')}</button>
-            <button type="submit" disabled={saving} className="btn-gold px-8">{saving ? '...' : t('common.save')}</button>
+          <DarkInput label={`${t('auth.username')} *`} required value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} />
+          <DarkInput label={t('auth.email')} type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+          <DarkInput label={`${t('auth.password')} *`} type="password" required value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="อย่างน้อย 6 ตัวอักษร" />
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', background: 'none', fontSize: 13, cursor: 'pointer' }}>ยกเลิก</button>
+            <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#0a0803', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none' }}>
+              {saving ? '...' : t('common.save')}
+            </button>
           </div>
         </form>
       </div>
@@ -125,10 +217,11 @@ function AddAdminModal({ onClose, onSaved, t }) {
   );
 }
 
-// ─── Order Update Modal ────────────────────────────────────────────────────────
+/* ── Order Modal ─────────────────────────────────────────────────────────── */
 function OrderModal({ order, onClose, onSaved, t }) {
   const [form, setForm] = useState({ status: order.status, tracking_number: order.tracking_number || '' });
   const [saving, setSaving] = useState(false);
+  const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true);
@@ -137,28 +230,30 @@ function OrderModal({ order, onClose, onSaved, t }) {
     finally { setSaving(false); }
   };
 
-  const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
   return (
-    <div className="fixed inset-0 z-50 bg-charcoal-dark/80 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-charcoal border border-charcoal-light rounded-xl w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-light">
-          <h2 className="font-serif text-lg text-cream">{t('admin.update_status')} #{order.id}</h2>
-          <button onClick={onClose} className="text-cream-muted hover:text-cream text-xl w-8 h-8 flex items-center justify-center">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(10px)' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-sm rounded-2xl" style={{ background: '#0c0904', border: '1px solid rgba(212,175,55,0.18)', boxShadow: '0 40px 100px rgba(0,0,0,0.85)' }}>
+        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+          <div>
+            <h2 className="font-serif text-lg text-cream">{t('admin.update_status')}</h2>
+            <p style={{ fontSize: '11px', color: 'rgba(212,175,55,0.4)', marginTop: 2 }}>คำสั่งซื้อ #{order.id}</p>
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div>
-            <label className="label">{t('common.status')}</label>
-            <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} className="input-field">
-              {STATUSES.map(s => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
+            <p style={{ fontSize: '10px', color: 'rgba(212,175,55,0.5)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>สถานะ</p>
+            <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.14)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '10px 14px', width: '100%', outline: 'none' }}>
+              {STATUSES.map(s => <option key={s} value={s} style={{ background: '#0c0904' }}>{t(`status.${s}`)}</option>)}
             </select>
           </div>
-          <div>
-            <label className="label">{t('admin.tracking_label')}</label>
-            <input value={form.tracking_number} onChange={e => setForm(p => ({ ...p, tracking_number: e.target.value }))} className="input-field" placeholder="EF123456789TH" />
-          </div>
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={onClose} className="btn-outline-gold px-4">{t('common.cancel')}</button>
-            <button type="submit" disabled={saving} className="btn-gold px-6">{saving ? '...' : t('common.save')}</button>
+          <DarkInput label={t('admin.tracking_label')} value={form.tracking_number} onChange={e => setForm(p => ({ ...p, tracking_number: e.target.value }))} placeholder="EF123456789TH" />
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', background: 'none', fontSize: 13, cursor: 'pointer' }}>ยกเลิก</button>
+            <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#0a0803', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none' }}>
+              {saving ? '...' : t('common.save')}
+            </button>
           </div>
         </form>
       </div>
@@ -166,19 +261,43 @@ function OrderModal({ order, onClose, onSaved, t }) {
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+/* ── Delete Confirm ──────────────────────────────────────────────────────── */
+function DeleteConfirm({ target, onClose, onConfirm, deleting, t }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)' }}>
+      <div className="w-full max-w-sm rounded-2xl p-7" style={{ background: '#0c0904', border: '1px solid rgba(220,50,50,0.25)', boxShadow: '0 40px 100px rgba(0,0,0,0.85)' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(220,50,50,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#f87171' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{ width: 24, height: 24 }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+        </div>
+        <h2 className="font-serif text-xl text-cream mb-2">{t('common.confirm')}</h2>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, marginBottom: 20 }}>
+          {t('admin.delete_msg')} <span style={{ color: '#f5f0e8', fontWeight: 600 }}>"{target.name}"</span>?<br />
+          <span style={{ color: 'rgba(248,113,113,0.7)', fontSize: 12 }}>{t('admin.delete_warn')}</span>
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onClose} style={{ flex: 1, padding: '10px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', background: 'none', fontSize: 13, cursor: 'pointer' }}>{t('common.cancel')}</button>
+          <button onClick={onConfirm} disabled={deleting} style={{ flex: 1, padding: '10px', borderRadius: 12, background: 'rgba(200,40,40,0.85)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none' }}>
+            {deleting ? '...' : t('common.delete')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Dashboard ──────────────────────────────────────────────────────── */
 export default function AdminDashboard() {
   const { t } = useLang();
   const [tab, setTab] = useState('products');
   const [amulets, setAmulets] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [users, setUsers]     = useState([]);
+  const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-  const [search, setSearch] = useState('');
-  const [toast, setToast] = useState('');
+  const [deleting, setDeleting]         = useState(false);
+  const [search, setSearch]   = useState('');
+  const [toast, setToast]     = useState('');
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -195,232 +314,409 @@ export default function AdminDashboard() {
 
   const handleDeleteAmulet = async () => {
     if (!deleteTarget) return; setDeleting(true);
-    try { await axios.delete(`/api/products/${deleteTarget.id}`); setDeleteTarget(null); fetchAll(); showToast('Deleted.'); }
-    catch { showToast('Delete failed.'); }
+    try { await axios.delete(`/api/products/${deleteTarget.id}`); setDeleteTarget(null); fetchAll(); showToast('ลบเรียบร้อยแล้ว'); }
+    catch { showToast('ลบไม่สำเร็จ'); }
     finally { setDeleting(false); }
   };
 
   const handleDeleteUser = async (userId) => {
-    try { await axios.delete(`/api/users/${userId}`); fetchAll(); showToast('User deleted.'); }
-    catch (err) { showToast(err.response?.data?.error || 'Failed.'); }
+    try { await axios.delete(`/api/users/${userId}`); fetchAll(); showToast('ลบผู้ใช้แล้ว'); }
+    catch (err) { showToast(err.response?.data?.error || 'ไม่สำเร็จ'); }
   };
 
   const toggleStatus = async (a) => {
     const newStatus = a.status === 'available' ? 'sold_out' : 'available';
     try { await axios.put(`/api/products/${a.id}`, { ...a, status: newStatus }); fetchAll(); }
-    catch { showToast('Update failed.'); }
+    catch { showToast('อัปเดตไม่สำเร็จ'); }
   };
 
-  const filteredAmulets = amulets.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || (a.temple || '').toLowerCase().includes(search.toLowerCase()));
-  const filteredOrders = orders.filter(o => String(o.id).includes(search) || (o.username || '').toLowerCase().includes(search.toLowerCase()));
-  const filteredUsers = users.filter(u => u.username.toLowerCase().includes(search.toLowerCase()));
+  const filteredAmulets = amulets.filter(a =>
+    a.name.toLowerCase().includes(search.toLowerCase()) || (a.temple || '').toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredOrders = orders.filter(o =>
+    String(o.id).includes(search) || (o.username || '').toLowerCase().includes(search.toLowerCase()) || (o.full_name || '').toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredUsers = users.filter(u => u.username.toLowerCase().includes(search.toLowerCase()) || (u.email || '').toLowerCase().includes(search.toLowerCase()));
 
-  const tabs = [
-    { key: 'products', label: t('admin.products_tab') },
-    { key: 'orders', label: t('admin.orders_tab') },
-    { key: 'users', label: t('admin.users_tab') },
+  const NAV = [
+    { key: 'products', label: 'สินค้า',      icon: G.pkg,   count: amulets.length },
+    { key: 'orders',   label: 'คำสั่งซื้อ',  icon: G.list,  count: orders.length },
+    { key: 'users',    label: 'ผู้ใช้',       icon: G.users, count: users.length },
   ];
 
+  const STATS = [
+    { label: 'สินค้าทั้งหมด',  value: amulets.length,                                    color: '#D4AF37' },
+    { label: 'พร้อมขาย',       value: amulets.filter(a => a.status === 'available').length, color: '#4ade80' },
+    { label: 'คำสั่งซื้อ',     value: orders.length,                                       color: '#7eaaff' },
+    { label: 'สมาชิกทั้งหมด', value: users.length,                                         color: '#c084fc' },
+  ];
+
+  const sidebarStyle = {
+    background: 'linear-gradient(180deg, #0a0703 0%, #080502 100%)',
+    borderRight: '1px solid rgba(212,175,55,0.1)',
+    width: 220,
+    flexShrink: 0,
+    position: 'sticky',
+    top: 64,
+    height: 'calc(100vh - 64px)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+  };
+
+  const pageLabel = NAV.find(n => n.key === tab)?.label || '';
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {toast && <div className="fixed bottom-6 right-6 z-50 bg-charcoal border border-gold rounded-lg px-5 py-3 text-cream text-sm shadow-gold-lg">{toast}</div>}
+    <div style={{ display: 'flex', background: '#0a0803', minHeight: 'calc(100vh - 64px)' }}>
 
-      {/* Modals */}
-      {modal === 'add' && <AmuletModal onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('Saved!'); }} t={t} />}
-      {modal?.type === 'edit' && <AmuletModal item={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('Updated!'); }} t={t} />}
-      {modal === 'add-admin' && <AddAdminModal onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('Admin created!'); }} t={t} />}
-      {modal?.type === 'order' && <OrderModal order={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('Order updated!'); }} t={t} />}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-charcoal-dark/80 flex items-center justify-center p-4">
-          <div className="bg-charcoal border border-red-900 rounded-xl w-full max-w-md p-6">
-            <h2 className="font-serif text-xl text-cream mb-2">{t('common.confirm')}</h2>
-            <p className="text-cream-muted text-sm mb-6">{t('admin.delete_msg')} <span className="text-cream">"{deleteTarget.name}"</span>? {t('admin.delete_warn')}</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteTarget(null)} className="btn-outline-gold px-5">{t('common.cancel')}</button>
-              <button onClick={handleDeleteAmulet} disabled={deleting} className="btn-danger">{deleting ? '...' : t('common.delete')}</button>
+      {/* ── SIDEBAR (desktop) ──────────────────────────────────── */}
+      <aside className="hidden md:flex flex-col" style={sidebarStyle}>
+        {/* Brand */}
+        <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid rgba(212,175,55,0.08)' }}>
+          <p style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', marginBottom: 4 }}>Admin Panel</p>
+          <p className="font-serif" style={{ fontSize: 18, color: '#D4AF37', lineHeight: 1.2 }}>อชิโต</p>
+          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>Achito Amulet Shop</p>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ padding: '12px 10px', flex: 1 }}>
+          {NAV.map(n => {
+            const active = tab === n.key;
+            return (
+              <button key={n.key} onClick={() => { setTab(n.key); setSearch(''); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                  padding: '11px 14px', borderRadius: 10, marginBottom: 3,
+                  background: active ? 'rgba(212,175,55,0.1)' : 'transparent',
+                  borderLeft: `2px solid ${active ? '#D4AF37' : 'transparent'}`,
+                  color: active ? '#D4AF37' : 'rgba(255,255,255,0.38)',
+                  fontSize: 13, fontWeight: active ? 600 : 400,
+                  cursor: 'pointer',
+                  transition: 'all .2s',
+                  textAlign: 'left',
+                }}
+              >
+                <span style={{ width: 18, height: 18, flexShrink: 0 }}>{n.icon}</span>
+                <span style={{ flex: 1 }}>{n.label}</span>
+                <span style={{ fontSize: 10, background: active ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.06)', color: active ? '#D4AF37' : 'rgba(255,255,255,0.25)', padding: '1px 7px', borderRadius: 999 }}>
+                  {n.count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(212,175,55,0.07)' }}>
+          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)', textAlign: 'center' }}>Luxury Amulet Dashboard</p>
+        </div>
+      </aside>
+
+      {/* ── CONTENT ───────────────────────────────────────────── */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Top bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+          padding: '16px 24px', position: 'sticky', top: 64, zIndex: 20,
+          background: 'rgba(10,8,3,0.92)', backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(212,175,55,0.1)',
+        }}>
+          <div>
+            <h1 className="font-serif" style={{ fontSize: 22, color: '#f5f0e8' }}>{pageLabel}</h1>
+            <p style={{ fontSize: 11, color: 'rgba(212,175,55,0.4)', marginTop: 2 }}>Achito Admin · จัดการ{pageLabel}</p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Search */}
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: 'rgba(255,255,255,0.2)' }}>{G.search}</span>
+              <input
+                value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="ค้นหา..."
+                style={{ paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,175,55,0.14)', color: '#f5f0e8', fontSize: 12, outline: 'none', width: 180 }}
+              />
             </div>
+
+            {/* Action button */}
+            {tab === 'products' && (
+              <button onClick={() => setModal('add')}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, background: 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#0a0803', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }}>
+                <span style={{ width: 14, height: 14 }}>{G.plus}</span>
+                เพิ่มสินค้า
+              </button>
+            )}
+            {tab === 'users' && (
+              <button onClick={() => setModal('add-admin')}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, background: 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#0a0803', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none' }}>
+                <span style={{ width: 14, height: 14 }}>{G.plus}</span>
+                {t('admin.add_admin')}
+              </button>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="font-serif text-3xl text-cream">{t('admin.title')}</h1>
-          <p className="text-cream-muted text-sm mt-1">{t('admin.subtitle')}</p>
+        {/* Mobile tab bar */}
+        <div className="md:hidden flex" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)', background: '#0a0703' }}>
+          {NAV.map(n => (
+            <button key={n.key} onClick={() => { setTab(n.key); setSearch(''); }}
+              style={{ flex: 1, padding: '12px 8px', fontSize: 11, fontWeight: tab === n.key ? 700 : 400, color: tab === n.key ? '#D4AF37' : 'rgba(255,255,255,0.3)', borderBottom: `2px solid ${tab === n.key ? '#D4AF37' : 'transparent'}`, background: 'none', border: 'none', cursor: 'pointer' }}>
+              {n.label}
+            </button>
+          ))}
         </div>
-        {tab === 'products' && <button onClick={() => setModal('add')} className="btn-gold flex items-center gap-2"><span>+</span>{t('admin.add_amulet')}</button>}
-        {tab === 'users' && <button onClick={() => setModal('add-admin')} className="btn-gold flex items-center gap-2">{t('admin.add_admin')}</button>}
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: t('admin.total_listings'), value: amulets.length },
-          { label: t('status.available'), value: amulets.filter(a => a.status === 'available').length },
-          { label: t('admin.orders_tab'), value: orders.length },
-          { label: t('admin.users_tab'), value: users.length },
-        ].map(s => (
-          <div key={s.label} className="bg-charcoal border border-charcoal-light rounded-lg px-4 py-3">
-            <p className="font-serif text-2xl text-gold">{s.value}</p>
-            <p className="text-cream-muted text-xs mt-0.5">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-charcoal-dark/50 p-1 rounded-lg w-fit">
-        {tabs.map(tb => (
-          <button key={tb.key} onClick={() => { setTab(tb.key); setSearch(''); }}
-            className={`px-4 py-2 rounded text-sm font-medium transition-all ${tab === tb.key ? 'bg-gold text-charcoal-dark shadow' : 'text-cream-muted hover:text-cream'}`}>
-            {tb.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-5 max-w-sm">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cream-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input type="text" placeholder={t('admin.filter_placeholder')} value={search} onChange={e => setSearch(e.target.value)} className="input-field pl-10 py-2 text-sm" />
-      </div>
-
-      {loading ? (
-        <div className="text-center py-16 text-gold font-serif animate-pulse">{t('common.loading')}</div>
-      ) : (
-        <>
-          {/* ─── Products Tab ─── */}
-          {tab === 'products' && (
-            <div className="overflow-hidden rounded-xl border border-charcoal-light">
-              <table className="w-full text-sm hidden lg:table">
-                <thead><tr className="bg-charcoal border-b border-charcoal-light">
-                  {[t('admin.col_amulet'), t('admin.col_category'), t('admin.col_temple'), t('admin.col_year'), t('admin.col_price'), t('admin.col_stock'), t('admin.col_status'), t('admin.col_actions')].map(h => <th key={h} className="text-left px-4 py-3 text-cream-muted font-medium">{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {filteredAmulets.map((a, idx) => (
-                    <tr key={a.id} className={`border-b border-charcoal-light hover:bg-charcoal-light/20 transition-colors ${idx % 2 === 0 ? 'bg-charcoal-dark/20' : ''}`}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <img src={a.image_url || PLACEHOLDER} alt={a.name} className="w-10 h-10 object-cover rounded border border-charcoal-light flex-shrink-0" onError={e => { e.target.src = PLACEHOLDER; }} />
-                          <span className="text-cream font-medium line-clamp-1 max-w-[180px]">{a.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3"><span className="border border-gold/40 text-gold text-xs px-2 py-0.5 rounded-full">{a.category}</span></td>
-                      <td className="px-4 py-3 text-cream-muted max-w-[140px] truncate">{a.temple || '—'}</td>
-                      <td className="px-4 py-3 text-cream-muted">{a.year || '—'}</td>
-                      <td className="px-4 py-3 text-right text-gold font-medium">฿{Number(a.price).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-center text-sm">
-                        {a.stock === null || a.stock === undefined
-                          ? <span className="text-cream-muted">∞</span>
-                          : <span className={a.stock <= 5 ? 'text-red-400 font-semibold' : 'text-cream'}>{a.stock}</span>}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button onClick={() => toggleStatus(a)} className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-all hover:scale-105 ${a.status === 'available' ? 'bg-emerald-900/60 text-emerald-300 border-emerald-700' : 'bg-red-900/60 text-red-300 border-red-700'}`} title="Click to toggle">
-                          {t(`status.${a.status}`)}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => setModal({ type: 'edit', data: a })} className="text-cream-muted hover:text-gold p-1.5 rounded hover:bg-charcoal-light transition-colors" title="Edit">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                          </button>
-                          <button onClick={() => setDeleteTarget(a)} className="text-cream-muted hover:text-red-400 p-1.5 rounded hover:bg-charcoal-light transition-colors" title="Delete">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {/* Mobile */}
-              <div className="lg:hidden divide-y divide-charcoal-light">
-                {filteredAmulets.map(a => (
-                  <div key={a.id} className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <img src={a.image_url || PLACEHOLDER} alt={a.name} className="w-12 h-12 object-cover rounded flex-shrink-0" onError={e => { e.target.src = PLACEHOLDER; }} />
-                      <div className="flex-1 min-w-0"><p className="text-cream font-medium text-sm truncate">{a.name}</p><p className="text-gold text-sm">฿{Number(a.price).toLocaleString()}</p></div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => toggleStatus(a)} className="btn-outline-gold text-xs py-1 flex-1">{t('common.toggle_status')}</button>
-                      <button onClick={() => setModal({ type: 'edit', data: a })} className="btn-outline-gold text-xs py-1 px-3">{t('common.edit')}</button>
-                      <button onClick={() => setDeleteTarget(a)} className="btn-danger text-xs py-1 px-3">{t('common.delete')}</button>
-                    </div>
-                  </div>
-                ))}
+        <div style={{ padding: '20px 24px 40px' }}>
+          {/* Stats grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }} className="grid-cols-2 sm:grid-cols-4">
+            {STATS.map(s => (
+              <div key={s.label} style={{
+                background: 'rgba(20,15,5,0.7)', backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(212,175,55,0.1)', borderRadius: 14, padding: '18px 20px',
+                boxShadow: 'inset 0 1px 0 rgba(212,175,55,0.06), 0 4px 20px rgba(0,0,0,0.35)',
+              }}>
+                <p className="font-serif" style={{ fontSize: 32, color: s.color, lineHeight: 1, fontWeight: 700, marginBottom: 6, textShadow: `0 0 24px ${s.color}44` }}>{s.value}</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.05em' }}>{s.label}</p>
               </div>
-              {filteredAmulets.length === 0 && <p className="text-center py-12 text-cream-muted">{t('common.no_data')}</p>}
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* ─── Orders Tab ─── */}
-          {tab === 'orders' && (
-            <div className="space-y-3">
-              {filteredOrders.length === 0 ? <p className="text-center py-12 text-cream-muted">{t('common.no_data')}</p> :
-                filteredOrders.map(o => (
-                  <div key={o.id} className="bg-charcoal border border-charcoal-light rounded-xl p-4">
-                    <div className="flex flex-wrap gap-4 items-center justify-between">
-                      <div><p className="text-cream-muted text-xs">{t('orders.order_id')}</p><p className="font-serif text-gold text-xl">#{o.id}</p></div>
-                      <div><p className="text-cream-muted text-xs">{t('admin.col_customer')}</p><p className="text-cream text-sm">{o.full_name} <span className="text-cream-muted">({o.username})</span></p></div>
-                      <div><p className="text-cream-muted text-xs">{t('admin.col_date')}</p><p className="text-cream text-sm">{new Date(o.created_at).toLocaleDateString('th-TH')}</p></div>
-                      <div><p className="text-cream-muted text-xs">{t('admin.col_total')}</p><p className="text-gold font-semibold">฿{Number(o.total_price).toLocaleString()}</p></div>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLOR[o.status] || ''}`}>{t(`status.${o.status}`)}</span>
-                        {o.tracking_number && <span className="text-cream-muted text-xs">{o.tracking_number}</span>}
-                        <button onClick={() => setModal({ type: 'order', data: o })} className="btn-outline-gold text-xs py-1.5 px-3">{t('admin.update_status')}</button>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <div style={{ display: 'inline-block', width: 36, height: 36, border: '2px solid rgba(212,175,55,0.2)', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : (
+            <>
+              {/* ─── Products ─── */}
+              {tab === 'products' && (
+                <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(14,10,3,0.6)' }}>
+                  {/* Desktop table */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(212,175,55,0.1)', background: 'rgba(212,175,55,0.04)' }}>
+                          {['สินค้า', 'หมวดหมู่', 'วัด', 'ปี', 'ราคา', 'คงเหลือ', 'สถานะ', ''].map(h => (
+                            <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(212,175,55,0.5)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredAmulets.map((a, idx) => (
+                          <tr key={a.id}
+                            style={{ borderBottom: '1px solid rgba(212,175,55,0.06)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', transition: 'background .15s' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.04)'}
+                            onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
+                          >
+                            {/* Name + thumbnail */}
+                            <td style={{ padding: '12px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <img src={a.image_url || PLACEHOLDER} alt={a.name} onError={e => { e.target.src = PLACEHOLDER; }}
+                                  style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(212,175,55,0.18)', flexShrink: 0 }} />
+                                <span style={{ color: '#f5f0e8', fontWeight: 500, maxWidth: 180, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>{a.name}</span>
+                              </div>
+                            </td>
+                            {/* Category */}
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 999, background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)', color: '#D4AF37', whiteSpace: 'nowrap' }}>
+                                {t(`categories.${a.category}`) || a.category}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.35)', maxWidth: 130 }}><span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.temple || '—'}</span></td>
+                            <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>{a.year || '—'}</td>
+                            <td style={{ padding: '12px 16px', color: '#D4AF37', fontWeight: 600, whiteSpace: 'nowrap' }}>฿{Number(a.price).toLocaleString()}</td>
+                            {/* Stock */}
+                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                              {a.stock === null || a.stock === undefined
+                                ? <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16 }}>∞</span>
+                                : <span style={{ color: a.stock <= 5 ? '#f87171' : '#f5f0e8', fontWeight: a.stock <= 5 ? 700 : 400 }}>{a.stock}</span>}
+                            </td>
+                            {/* Status toggle */}
+                            <td style={{ padding: '12px 16px' }}>
+                              <button onClick={() => toggleStatus(a)}
+                                style={{
+                                  padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                                  background: a.status === 'available' ? 'rgba(10,120,60,0.2)' : 'rgba(160,20,20,0.2)',
+                                  border: `1px solid ${a.status === 'available' ? 'rgba(40,200,110,0.4)' : 'rgba(240,80,80,0.35)'}`,
+                                  color: a.status === 'available' ? '#4ade80' : '#f87171',
+                                  transition: 'all .2s',
+                                }}>
+                                {t(`status.${a.status}`)}
+                              </button>
+                            </td>
+                            {/* Actions */}
+                            <td style={{ padding: '12px 16px' }}>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <button onClick={() => setModal({ type: 'edit', data: a })} title="แก้ไข"
+                                  style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.18)', color: 'rgba(212,175,55,0.65)', cursor: 'pointer', transition: 'all .2s' }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.16)'; e.currentTarget.style.color = '#D4AF37'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.07)'; e.currentTarget.style.color = 'rgba(212,175,55,0.65)'; }}>
+                                  <span style={{ width: 14, height: 14 }}>{G.edit}</span>
+                                </button>
+                                <button onClick={() => setDeleteTarget(a)} title="ลบ"
+                                  style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(200,40,40,0.07)', border: '1px solid rgba(200,60,60,0.18)', color: 'rgba(248,113,113,0.55)', cursor: 'pointer', transition: 'all .2s' }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(200,40,40,0.18)'; e.currentTarget.style.color = '#f87171'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(200,40,40,0.07)'; e.currentTarget.style.color = 'rgba(248,113,113,0.55)'; }}>
+                                  <span style={{ width: 14, height: 14 }}>{G.trash}</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredAmulets.length === 0 && (
+                          <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>{t('common.no_data')}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile cards */}
+                  <div className="lg:hidden divide-y" style={{ borderColor: 'rgba(212,175,55,0.08)' }}>
+                    {filteredAmulets.map(a => (
+                      <div key={a.id} style={{ padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                          <img src={a.image_url || PLACEHOLDER} alt={a.name} onError={e => { e.target.src = PLACEHOLDER; }}
+                            style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(212,175,55,0.18)', flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ color: '#f5f0e8', fontWeight: 500, fontSize: 13, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</p>
+                            <p style={{ color: '#D4AF37', fontSize: 14, fontWeight: 600 }}>฿{Number(a.price).toLocaleString()}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => toggleStatus(a)} style={{ flex: 1, padding: '7px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', background: a.status === 'available' ? 'rgba(10,120,60,0.2)' : 'rgba(160,20,20,0.2)', border: `1px solid ${a.status === 'available' ? 'rgba(40,200,110,0.4)' : 'rgba(240,80,80,0.35)'}`, color: a.status === 'available' ? '#4ade80' : '#f87171' }}>
+                            {t('common.toggle_status')}
+                          </button>
+                          <button onClick={() => setModal({ type: 'edit', data: a })} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 11, cursor: 'pointer', background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', color: '#D4AF37' }}>{t('common.edit')}</button>
+                          <button onClick={() => setDeleteTarget(a)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 11, cursor: 'pointer', background: 'rgba(200,40,40,0.1)', border: '1px solid rgba(200,60,60,0.25)', color: '#f87171' }}>{t('common.delete')}</button>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                    {filteredAmulets.length === 0 && <p style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>{t('common.no_data')}</p>}
                   </div>
-                ))
-              }
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* ─── Users Tab ─── */}
-          {tab === 'users' && (
-            <div className="overflow-hidden rounded-xl border border-charcoal-light">
-              <table className="w-full text-sm hidden md:table">
-                <thead><tr className="bg-charcoal border-b border-charcoal-light">
-                  {[t('admin.username'), t('auth.email'), 'Name', t('admin.role'), t('admin.joined'), t('common.action')].map(h => <th key={h} className="text-left px-4 py-3 text-cream-muted font-medium">{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {filteredUsers.map((u, idx) => (
-                    <tr key={u.id} className={`border-b border-charcoal-light hover:bg-charcoal-light/20 ${idx % 2 === 0 ? 'bg-charcoal-dark/20' : ''}`}>
-                      <td className="px-4 py-3 text-cream font-medium">{u.username}</td>
-                      <td className="px-4 py-3 text-cream-muted">{u.email || '—'}</td>
-                      <td className="px-4 py-3 text-cream-muted">{[u.first_name, u.last_name].filter(Boolean).join(' ') || '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${u.role === 'admin' ? 'bg-gold/20 text-gold border-gold/40' : 'bg-charcoal-light text-cream-muted border-charcoal-light'}`}>{u.role}</span>
-                      </td>
-                      <td className="px-4 py-3 text-cream-muted">{new Date(u.created_at).toLocaleDateString('th-TH')}</td>
-                      <td className="px-4 py-3">
-                        <button onClick={() => handleDeleteUser(u.id)} className="text-cream-muted hover:text-red-400 p-1.5 rounded hover:bg-charcoal-light transition-colors" title="Delete">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {/* Mobile users */}
-              <div className="md:hidden divide-y divide-charcoal-light">
-                {filteredUsers.map(u => (
-                  <div key={u.id} className="p-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-cream font-medium">{u.username}</p>
-                      <p className="text-cream-muted text-xs">{u.email || '—'}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium mt-1 inline-block ${u.role === 'admin' ? 'bg-gold/20 text-gold border-gold/40' : 'bg-charcoal-light text-cream-muted border-charcoal-light'}`}>{u.role}</span>
-                    </div>
-                    <button onClick={() => handleDeleteUser(u.id)} className="btn-danger text-xs py-1 px-3">{t('common.delete')}</button>
+              {/* ─── Orders ─── */}
+              {tab === 'orders' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {filteredOrders.length === 0
+                    ? <p style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>{t('common.no_data')}</p>
+                    : filteredOrders.map(o => {
+                        const st = ORDER_STATUS_STYLE[o.status] || {};
+                        return (
+                          <div key={o.id} style={{ borderRadius: 14, border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(20,15,5,0.65)', backdropFilter: 'blur(12px)', padding: '16px 20px', boxShadow: 'inset 0 1px 0 rgba(212,175,55,0.06)' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div>
+                                <p style={{ fontSize: 10, color: 'rgba(212,175,55,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>คำสั่งซื้อ</p>
+                                <p className="font-serif" style={{ fontSize: 22, color: '#D4AF37', lineHeight: 1 }}>#{o.id}</p>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>ลูกค้า</p>
+                                <p style={{ color: '#f5f0e8', fontSize: 13, fontWeight: 500 }}>{o.full_name || '—'}</p>
+                                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>@{o.username}</p>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>วันที่</p>
+                                <p style={{ color: '#f5f0e8', fontSize: 13 }}>{new Date(o.created_at).toLocaleDateString('th-TH')}</p>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>ยอดรวม</p>
+                                <p style={{ color: '#D4AF37', fontSize: 16, fontWeight: 700 }}>฿{Number(o.total_price).toLocaleString()}</p>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, color: st.text, whiteSpace: 'nowrap' }}>
+                                  {t(`status.${o.status}`)}
+                                </span>
+                                {o.tracking_number && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap' }}>{o.tracking_number}</span>}
+                                <button onClick={() => setModal({ type: 'order', data: o })}
+                                  style={{ padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)', color: '#D4AF37', whiteSpace: 'nowrap' }}>
+                                  {t('admin.update_status')}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  }
+                </div>
+              )}
+
+              {/* ─── Users ─── */}
+              {tab === 'users' && (
+                <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(14,10,3,0.6)' }}>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(212,175,55,0.1)', background: 'rgba(212,175,55,0.04)' }}>
+                          {['Username', 'Email', 'ชื่อ', 'Role', 'สมัครเมื่อ', ''].map(h => (
+                            <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(212,175,55,0.5)', fontWeight: 600 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((u, idx) => (
+                          <tr key={u.id}
+                            style={{ borderBottom: '1px solid rgba(212,175,55,0.06)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)', transition: 'background .15s' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.04)'}
+                            onMouseLeave={e => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
+                          >
+                            <td style={{ padding: '12px 16px', color: '#f5f0e8', fontWeight: 500 }}>{u.username}</td>
+                            <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.35)' }}>{u.email || '—'}</td>
+                            <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.35)' }}>{[u.first_name, u.last_name].filter(Boolean).join(' ') || '—'}</td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 999, background: u.role === 'admin' ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.06)', border: `1px solid ${u.role === 'admin' ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.1)'}`, color: u.role === 'admin' ? '#D4AF37' : 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>{new Date(u.created_at).toLocaleDateString('th-TH')}</td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <button onClick={() => handleDeleteUser(u.id)} title="ลบ"
+                                style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(200,40,40,0.07)', border: '1px solid rgba(200,60,60,0.18)', color: 'rgba(248,113,113,0.55)', cursor: 'pointer', transition: 'all .2s' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(200,40,40,0.18)'; e.currentTarget.style.color = '#f87171'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(200,40,40,0.07)'; e.currentTarget.style.color = 'rgba(248,113,113,0.55)'; }}>
+                                <span style={{ width: 14, height: 14 }}>{G.trash}</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredUsers.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>{t('common.no_data')}</td></tr>}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
-              {filteredUsers.length === 0 && <p className="text-center py-12 text-cream-muted">{t('common.no_data')}</p>}
-            </div>
+                  <div className="md:hidden divide-y" style={{ borderColor: 'rgba(212,175,55,0.08)' }}>
+                    {filteredUsers.map(u => (
+                      <div key={u.id} style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <div>
+                          <p style={{ color: '#f5f0e8', fontWeight: 500, fontSize: 13 }}>{u.username}</p>
+                          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 2 }}>{u.email || '—'}</p>
+                          <span style={{ marginTop: 5, display: 'inline-block', fontSize: 10, padding: '2px 8px', borderRadius: 999, background: u.role === 'admin' ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.06)', border: `1px solid ${u.role === 'admin' ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.1)'}`, color: u.role === 'admin' ? '#D4AF37' : 'rgba(255,255,255,0.35)' }}>{u.role}</span>
+                        </div>
+                        <button onClick={() => handleDeleteUser(u.id)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 11, cursor: 'pointer', background: 'rgba(200,40,40,0.1)', border: '1px solid rgba(200,60,60,0.25)', color: '#f87171' }}>{t('common.delete')}</button>
+                      </div>
+                    ))}
+                    {filteredUsers.length === 0 && <p style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>{t('common.no_data')}</p>}
+                  </div>
+                </div>
+              )}
+            </>
           )}
-        </>
+        </div>
+      </div>
+
+      {/* ── MODALS ────────────────────────────────────────────── */}
+      {modal === 'add'         && <AmuletModal onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('เพิ่มสินค้าแล้ว!'); }} t={t} />}
+      {modal?.type === 'edit'  && <AmuletModal item={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('อัปเดตแล้ว!'); }} t={t} />}
+      {modal === 'add-admin'   && <AddAdminModal onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('สร้าง Admin แล้ว!'); }} t={t} />}
+      {modal?.type === 'order' && <OrderModal order={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('อัปเดตคำสั่งซื้อแล้ว!'); }} t={t} />}
+      {deleteTarget && <DeleteConfirm target={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteAmulet} deleting={deleting} t={t} />}
+
+      {/* ── TOAST ─────────────────────────────────────────────── */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, padding: '12px 20px', borderRadius: 12, background: 'rgba(16,12,4,0.96)', border: '1px solid rgba(212,175,55,0.35)', color: '#D4AF37', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)' }}>
+          ✦ {toast}
+        </div>
       )}
+
+      {/* Spinner keyframe */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
