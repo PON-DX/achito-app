@@ -17,7 +17,7 @@ const REVEAL = (visible, delay = 0) => ({
 export default function ProfilePon() {
   const { t } = useLang();
   const { isAdmin } = useAuth();
-  const { content, refetch } = useSiteContent('profile_pon');
+  const { content, loading, refetch } = useSiteContent('profile_pon');
   const [bioRef, bioVisible] = useScrollReveal();
   const [statsRef, statsVisible] = useScrollReveal();
   const [contactRef, contactVisible] = useScrollReveal();
@@ -64,6 +64,12 @@ export default function ProfilePon() {
   };
 
   const displayImage = content.image_url || ponLogo;
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#080603]">
+      <div className="w-10 h-10 rounded-full border-2 border-gold/20 border-t-gold animate-spin" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
@@ -173,7 +179,7 @@ export default function ProfilePon() {
             className="w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
             style={{ background: '#14100a', border: '1px solid rgba(212,175,55,0.25)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}
           >
-            <h3 className="font-serif text-xl text-gold mb-5">แก้ไขโปรไฟล์ — พ้อน</h3>
+            <h3 className="font-serif text-xl text-gold mb-5">แก้ไขโปรไฟล์ — พล</h3>
 
             {/* Image */}
             <div className="mb-5 text-center">

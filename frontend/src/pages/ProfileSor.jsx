@@ -17,7 +17,7 @@ const REVEAL = (visible, delay = 0) => ({
 export default function ProfileSor() {
   const { t } = useLang();
   const { isAdmin } = useAuth();
-  const { content, refetch } = useSiteContent('profile_sor');
+  const { content, loading, refetch } = useSiteContent('profile_sor');
   const [bioRef, bioVisible] = useScrollReveal();
   const [statsRef, statsVisible] = useScrollReveal();
   const [contactRef, contactVisible] = useScrollReveal();
@@ -64,6 +64,12 @@ export default function ProfileSor() {
   };
 
   const displayImage = content.image_url || sorLogo;
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#080603]">
+      <div className="w-10 h-10 rounded-full border-2 border-gold/20 border-t-gold animate-spin" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
