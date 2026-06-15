@@ -374,7 +374,7 @@ body::before {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmer 3s linear infinite;
+  animation: shimmer 7s linear infinite;
   filter: drop-shadow(0 0 8px rgba(212,175,55,0.35));
 }
 
