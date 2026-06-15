@@ -42,14 +42,15 @@ function DarkInput({ label, as: Tag = 'input', type = 'text', className = '', ch
   );
 }
 
-/* ── Amulet Modal ── */
+/* ── Amulet Modal — luxury full-panel ── */
 function AmuletModal({ item, onClose, onSaved, t }) {
-  const [form, setForm]     = useState(item ? { ...EMPTY_FORM, ...item, year: item.year || '', price: item.price || '', stock: item.stock ?? '' } : { ...EMPTY_FORM });
+  const [form, setForm]         = useState(item ? { ...EMPTY_FORM, ...item, year: item.year || '', price: item.price || '', stock: item.stock ?? '' } : { ...EMPTY_FORM });
   const [previews, setPreviews] = useState(item?.images?.length ? item.images : item?.image_url ? [item.image_url] : []);
+  const [activeImg, setActiveImg] = useState(0);
   const [newFiles, setNewFiles] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
-  const [drag, setDrag]     = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState('');
+  const [drag, setDrag]         = useState(false);
   const fileRef = useRef();
 
   const applyFiles = (files) => {
@@ -57,6 +58,7 @@ function AmuletModal({ item, onClose, onSaved, t }) {
     if (!imgs.length) return;
     setNewFiles(imgs);
     setPreviews(imgs.map(f => URL.createObjectURL(f)));
+    setActiveImg(0);
   };
 
   const handleSubmit = async (e) => {
@@ -72,88 +74,234 @@ function AmuletModal({ item, onClose, onSaved, t }) {
     finally { setSaving(false); }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl"
-        style={{ background: 'linear-gradient(180deg,#100d05 0%,#0a0802 100%)', border: '1px solid rgba(212,175,55,0.22)', boxShadow: '0 0 0 1px rgba(0,0,0,0.5), 0 48px 120px rgba(0,0,0,0.9)' }}>
+  const labelStyle = { display: 'block', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)', marginBottom: 7, fontWeight: 600 };
+  const inputStyle = { width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,175,55,0.16)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '11px 15px', outline: 'none', transition: 'border-color .2s, box-shadow .2s' };
+  const onFocus = e => { e.target.style.borderColor = 'rgba(212,175,55,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.08)'; };
+  const onBlur  = e => { e.target.style.borderColor = 'rgba(212,175,55,0.16)'; e.target.style.boxShadow = 'none'; };
 
-        {/* header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-7 py-5 rounded-t-2xl"
-          style={{ background: 'linear-gradient(180deg,#100d05,#0e0b04)', borderBottom: '1px solid rgba(212,175,55,0.12)' }}>
-          <div>
-            <p style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', marginBottom: 3 }}>Admin · {item ? 'แก้ไข' : 'เพิ่มใหม่'}</p>
-            <h2 className="font-serif" style={{ fontSize: 20, color: '#f5f0e8' }}>{item ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h2>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(18px)', padding: '12px' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+
+      <div style={{
+        width: '100%', maxWidth: 960,
+        maxHeight: '96vh',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 22,
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg,#130f06 0%,#0b0803 100%)',
+        border: '1px solid rgba(212,175,55,0.28)',
+        boxShadow: '0 0 80px rgba(212,175,55,0.07), 0 60px 180px rgba(0,0,0,0.97), inset 0 1px 0 rgba(212,175,55,0.12)',
+      }}>
+
+        {/* ── HEADER ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px', flexShrink: 0, background: 'linear-gradient(90deg,rgba(212,175,55,0.1) 0%,rgba(212,175,55,0.02) 60%,transparent)', borderBottom: '1px solid rgba(212,175,55,0.14)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 3, height: 32, borderRadius: 2, background: 'linear-gradient(180deg,#D4AF37,#8a6010)', flexShrink: 0 }} />
+            <div>
+              <p style={{ fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', marginBottom: 4 }}>☸ อชิโต · {item ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</p>
+              <h2 className="font-serif" style={{ fontSize: 24, color: '#f5f0e8', lineHeight: 1 }}>{item ? item.name || 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h2>
+            </div>
           </div>
-          <button onClick={onClose}
-            style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.45)', cursor: 'pointer', fontSize: 17, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="px-7 py-6 space-y-5">
+        {/* ── BODY ── */}
+        <form id="amulet-form" onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+
+          {/* LEFT PANEL — image area */}
+          <div className="hidden md:flex flex-col" style={{ width: 340, flexShrink: 0, borderRight: '1px solid rgba(212,175,55,0.12)', background: 'rgba(0,0,0,0.25)', overflowY: 'auto', padding: 20, gap: 14 }}>
+
+            {/* main preview */}
+            <div
+              onDrop={e => { e.preventDefault(); setDrag(false); applyFiles(Array.from(e.dataTransfer.files)); }}
+              onDragOver={e => { e.preventDefault(); setDrag(true); }}
+              onDragLeave={() => setDrag(false)}
+              onClick={() => fileRef.current.click()}
+              style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow .2s', border: drag ? '2px solid rgba(212,175,55,0.7)' : '1px solid rgba(212,175,55,0.2)', boxShadow: drag ? '0 0 30px rgba(212,175,55,0.2)' : '0 8px 32px rgba(0,0,0,0.6)', aspectRatio: '3/4', background: '#0a0702', flexShrink: 0 }}>
+              {previews.length > 0 ? (
+                <>
+                  <img src={previews[activeImg] || previews[0]} alt="preview" onError={e => { e.target.src = PLACEHOLDER; }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  {/* overlay on hover */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%)', pointerEvents: 'none' }} />
+                  <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, textAlign: 'center' }}>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em' }}>คลิกเพื่อเปลี่ยนรูป</span>
+                  </div>
+                </>
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: 'radial-gradient(ellipse at center,rgba(212,175,55,0.05),transparent)' }}>
+                  <div style={{ width: 52, height: 52, color: 'rgba(212,175,55,0.25)' }}><IcUpload /></div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 4 }}>ลากรูปมาวางที่นี่</p>
+                    <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: 11 }}>หรือคลิกเพื่อเลือก</p>
+                    <p style={{ color: 'rgba(212,175,55,0.3)', fontSize: 10, marginTop: 8, letterSpacing: '0.1em' }}>JPG · PNG · WEBP</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <input ref={fileRef} type="file" multiple accept="image/*" onChange={e => applyFiles(Array.from(e.target.files))} style={{ display: 'none' }} />
+
+            {/* thumbnails row */}
+            {previews.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {previews.map((p, i) => (
+                  <div key={i} onClick={() => setActiveImg(i)} style={{ position: 'relative', width: 56, height: 56, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: `2px solid ${activeImg === i ? '#D4AF37' : 'rgba(212,175,55,0.18)'}`, boxShadow: activeImg === i ? '0 0 12px rgba(212,175,55,0.35)' : 'none', transition: 'all .2s', flexShrink: 0 }}>
+                    <img src={p} onError={e => { e.target.src = PLACEHOLDER; }} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} alt="" />
+                  </div>
+                ))}
+                {/* add more */}
+                <div onClick={() => fileRef.current.click()} style={{ width: 56, height: 56, borderRadius: 10, border: '1px dashed rgba(212,175,55,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(212,175,55,0.4)', fontSize: 22, flexShrink: 0, transition: 'border-color .2s' }}>+</div>
+              </div>
+            )}
+
+            {/* upload btn (always visible) */}
+            <button type="button" onClick={() => fileRef.current.click()}
+              style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)', color: '#D4AF37', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all .2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.14)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.08)'; }}>
+              <span style={{ width: 15, height: 15 }}><IcUpload /></span>
+              {previews.length > 0 ? 'เปลี่ยนรูปภาพ' : 'เลือกรูปภาพ'}
+            </button>
+
+            {/* price preview card */}
+            {form.name && (
+              <div style={{ borderRadius: 14, padding: '16px', background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.15)', marginTop: 4 }}>
+                <p style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', marginBottom: 8 }}>ตัวอย่างสินค้า</p>
+                <p style={{ fontSize: 13, color: '#f5f0e8', fontWeight: 500, lineHeight: 1.4, marginBottom: 6 }}>{form.name}</p>
+                {form.temple && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>วัด{form.temple}</p>}
+                {form.price && <p style={{ fontSize: 20, color: '#D4AF37', fontWeight: 800 }}>฿{Number(form.price).toLocaleString()}</p>}
+                <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
+                  {form.category && <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{form.category}</span>}
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: form.status === 'available' ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)', border: `1px solid ${form.status === 'available' ? 'rgba(52,211,153,0.4)' : 'rgba(248,113,113,0.4)'}`, color: form.status === 'available' ? '#34d399' : '#f87171' }}>
+                    {form.status === 'available' ? 'มีสินค้า' : 'หมดแล้ว'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT PANEL — form */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {error && <div style={{ background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.35)', borderRadius: 10, padding: '12px 16px', color: '#fca5a5', fontSize: 13 }}>{error}</div>}
 
-            {/* upload */}
-            <div>
-              <p style={{ fontSize: 10, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)', marginBottom: 8 }}>รูปภาพสินค้า</p>
-              <div
-                onDrop={e => { e.preventDefault(); setDrag(false); applyFiles(Array.from(e.dataTransfer.files)); }}
-                onDragOver={e => { e.preventDefault(); setDrag(true); }}
-                onDragLeave={() => setDrag(false)}
-                onClick={() => fileRef.current.click()}
-                style={{ borderRadius: 14, border: `2px dashed ${drag ? 'rgba(212,175,55,0.7)' : 'rgba(212,175,55,0.22)'}`, background: drag ? 'rgba(212,175,55,0.06)' : 'rgba(212,175,55,0.02)', padding: 20, textAlign: 'center', cursor: 'pointer', transition: 'all .2s' }}>
+            {/* mobile upload (shows on small screens) */}
+            <div className="md:hidden">
+              <label style={labelStyle}>รูปภาพสินค้า</label>
+              <div onClick={() => fileRef.current.click()} style={{ borderRadius: 12, border: `2px dashed rgba(212,175,55,0.22)`, background: 'rgba(212,175,55,0.02)', padding: 16, textAlign: 'center', cursor: 'pointer' }}>
                 {previews.length > 0 ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                    {previews.map((p, i) => <img key={i} src={p} style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(212,175,55,0.25)' }} onError={e => { e.target.src = PLACEHOLDER; }} alt="" />)}
-                    <div style={{ width: 72, height: 72, borderRadius: 10, border: '1px dashed rgba(212,175,55,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(212,175,55,0.35)', fontSize: 24 }}>+</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {previews.map((p, i) => <img key={i} src={p} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(212,175,55,0.25)' }} onError={e => { e.target.src = PLACEHOLDER; }} alt="" />)}
                   </div>
                 ) : (
-                  <div style={{ padding: '10px 0' }}>
-                    <div style={{ width: 36, height: 36, margin: '0 auto 10px', color: 'rgba(212,175,55,0.3)' }}><IcUpload /></div>
-                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>ลากรูปมาวางหรือคลิกเพื่อเลือก</p>
-                    <p style={{ color: 'rgba(255,255,255,0.14)', fontSize: 11, marginTop: 4 }}>JPG · PNG · WEBP</p>
-                  </div>
+                  <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>แตะเพื่อเลือกรูป</p>
                 )}
               </div>
-              <input ref={fileRef} type="file" multiple accept="image/*" onChange={e => applyFiles(Array.from(e.target.files))} className="hidden" />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DarkInput className="sm:col-span-2" label="ชื่อพระ *" required value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="เช่น พระผงพรายสมุทร" />
-              <div>
-                <p style={{ fontSize: 10, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)', marginBottom: 6 }}>หมวดหมู่</p>
-                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '10px 14px', outline: 'none' }}>
-                  {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#100d05' }}>{t(`categories.${c}`)}</option>)}
-                </select>
+            {/* Section: ข้อมูลพระ */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ height: 1, flex: 1, background: 'rgba(212,175,55,0.14)' }} />
+                <span style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', fontWeight: 700, whiteSpace: 'nowrap' }}>ข้อมูลพระ</span>
+                <div style={{ height: 1, flex: 1, background: 'rgba(212,175,55,0.14)' }} />
               </div>
-              <div>
-                <p style={{ fontSize: 10, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)', marginBottom: 6 }}>สถานะ</p>
-                <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '10px 14px', outline: 'none' }}>
-                  <option value="available" style={{ background: '#100d05' }}>{t('status.available')}</option>
-                  <option value="sold_out"  style={{ background: '#100d05' }}>{t('status.sold_out')}</option>
-                </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={labelStyle}>ชื่อพระ *</label>
+                  <input required value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} onFocus={onFocus} onBlur={onBlur} placeholder="เช่น พระผงพรายสมุทร รุ่นแรก" style={inputStyle} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>วัด / สำนัก</label>
+                    <input value={form.temple} onChange={e => setForm(p => ({ ...p, temple: e.target.value }))} onFocus={onFocus} onBlur={onBlur} placeholder="เช่น วัดสุทธิวาส" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>รุ่น / พิมพ์</label>
+                    <input value={form.batch_version} onChange={e => setForm(p => ({ ...p, batch_version: e.target.value }))} onFocus={onFocus} onBlur={onBlur} placeholder="เช่น รุ่นแรก" style={inputStyle} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>รายละเอียด / ประวัติ</label>
+                  <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} onFocus={onFocus} onBlur={onBlur} rows={4} placeholder="คุณสมบัติ ประวัติ ความศักดิ์สิทธิ์ ที่มา..." style={{ ...inputStyle, resize: 'vertical', minHeight: 90 }} />
+                </div>
               </div>
-              <DarkInput label="วัด / สำนัก"   value={form.temple}        onChange={e => setForm(p => ({ ...p, temple: e.target.value }))} placeholder="เช่น วัดสุทธิวาส" />
-              <DarkInput label="รุ่น / พิมพ์"  value={form.batch_version} onChange={e => setForm(p => ({ ...p, batch_version: e.target.value }))} placeholder="เช่น รุ่นแรก" />
-              <DarkInput label="ปี พ.ศ."     type="number" value={form.year}  onChange={e => setForm(p => ({ ...p, year: e.target.value }))} placeholder="2563" />
-              <DarkInput label="ราคา (บาท) *" type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required placeholder="0" />
-              <DarkInput label="คงเหลือ" type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} placeholder="ว่าง = ไม่จำกัด" />
-              <DarkInput as="textarea" className="sm:col-span-2" label="รายละเอียด" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="ประวัติ คุณสมบัติ ความศักดิ์สิทธิ์..." />
             </div>
-          </div>
 
-          <div className="flex gap-3 px-7 pb-7">
-            <button type="button" onClick={onClose}
-              style={{ flex: 1, padding: '12px', borderRadius: 12, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer' }}>ยกเลิก</button>
-            <button type="submit" disabled={saving}
-              style={{ flex: 2, padding: '12px', borderRadius: 12, background: 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#06030c', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none', boxShadow: '0 4px 20px rgba(212,175,55,0.35)', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'กำลังบันทึก...' : '✓  บันทึกสินค้า'}
-            </button>
+            {/* Section: จัดหมวดหมู่ */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ height: 1, flex: 1, background: 'rgba(212,175,55,0.14)' }} />
+                <span style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', fontWeight: 700, whiteSpace: 'nowrap' }}>จัดหมวดหมู่</span>
+                <div style={{ height: 1, flex: 1, background: 'rgba(212,175,55,0.14)' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>หมวดหมู่</label>
+                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} onFocus={onFocus} onBlur={onBlur} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#100d05' }}>{t(`categories.${c}`)}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>ปี พ.ศ.</label>
+                  <input type="number" value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))} onFocus={onFocus} onBlur={onBlur} placeholder="2563" style={inputStyle} />
+                </div>
+              </div>
+            </div>
+
+            {/* Section: ราคาและสต็อก */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ height: 1, flex: 1, background: 'rgba(212,175,55,0.14)' }} />
+                <span style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', fontWeight: 700, whiteSpace: 'nowrap' }}>ราคา & สต็อก</span>
+                <div style={{ height: 1, flex: 1, background: 'rgba(212,175,55,0.14)' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div style={{ gridColumn: '1 / span 1' }}>
+                  <label style={labelStyle}>ราคา (บาท) *</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#D4AF37', fontWeight: 700, fontSize: 14, pointerEvents: 'none' }}>฿</span>
+                    <input required type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} onFocus={onFocus} onBlur={onBlur} placeholder="0" style={{ ...inputStyle, paddingLeft: 28 }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>คงเหลือ</label>
+                  <input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} onFocus={onFocus} onBlur={onBlur} placeholder="∞" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>สถานะ</label>
+                  <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} onFocus={onFocus} onBlur={onBlur} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="available" style={{ background: '#100d05' }}>มีสินค้า</option>
+                    <option value="sold_out"  style={{ background: '#100d05' }}>หมดแล้ว</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </form>
+
+        {/* ── FOOTER ── */}
+        <div style={{ display: 'flex', gap: 12, padding: '16px 28px', borderTop: '1px solid rgba(212,175,55,0.12)', background: 'rgba(0,0,0,0.25)', flexShrink: 0 }}>
+          <button type="button" onClick={onClose}
+            style={{ padding: '12px 24px', borderRadius: 12, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer', transition: 'all .2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}>
+            ยกเลิก
+          </button>
+          <button
+            type="submit"
+            form="amulet-form"
+            disabled={saving}
+            style={{ flex: 1, padding: '12px', borderRadius: 12, background: saving ? 'rgba(212,175,55,0.4)' : 'linear-gradient(135deg,#D4AF37 0%,#c9a227 40%,#B8941F 100%)', color: '#06030c', fontSize: 14, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer', border: 'none', boxShadow: saving ? 'none' : '0 6px 28px rgba(212,175,55,0.4), 0 0 0 1px rgba(212,175,55,0.3)', letterSpacing: '0.04em', transition: 'all .2s' }}
+            onMouseEnter={e => { if (!saving) e.currentTarget.style.boxShadow = '0 8px 36px rgba(212,175,55,0.55), 0 0 0 1px rgba(212,175,55,0.4)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = saving ? 'none' : '0 6px 28px rgba(212,175,55,0.4), 0 0 0 1px rgba(212,175,55,0.3)'; }}>
+            {saving ? '⏳  กำลังบันทึก...' : item ? '✦  บันทึกการแก้ไข' : '✦  เพิ่มสินค้า'}
+          </button>
+        </div>
       </div>
     </div>
   );
