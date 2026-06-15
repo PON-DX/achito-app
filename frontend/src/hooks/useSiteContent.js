@@ -7,7 +7,10 @@ export function useSiteContent(section) {
 
   const fetchContent = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/content/${section}`);
+      const res = await axios.get(`/api/content/${section}`, {
+        params: { _t: Date.now() },
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       setContent(res.data || {});
     } catch {}
     setLoading(false);

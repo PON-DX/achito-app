@@ -20,6 +20,7 @@ router.get('/:section', async (req, res) => {
       'SELECT content FROM site_content WHERE section = $1',
       [req.params.section]
     );
+    res.set('Cache-Control', 'no-store');
     res.json(row ? row.content : {});
   } catch (err) {
     res.status(500).json({ error: err.message });
