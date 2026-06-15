@@ -70,7 +70,7 @@ export default function Home() {
   }, [searchInput]);
 
   return (
-    <div>
+    <div className="overflow-x-clip">
       {/* ══════════════════════════════════════════
           HERO — deep atmospheric
           ══════════════════════════════════════════ */}
@@ -167,7 +167,7 @@ export default function Home() {
             </div>
 
             {/* ── Seller logos ──────────────────── */}
-            <div className="flex flex-row md:flex-col gap-6 items-center animate-logos-entrance">
+            <div className="flex flex-row md:flex-col gap-3 md:gap-6 items-center animate-logos-entrance">
               {[
                 { to: '/profile/pon', src: ponLogo, alt: 'Pon' },
                 { to: '/profile/sor', src: sorLogo, alt: 'Sor' },
@@ -186,7 +186,7 @@ export default function Home() {
                   <img
                     src={src}
                     alt={alt}
-                    className="relative w-28 h-28 md:w-36 md:h-36 object-contain rounded-2xl transition-all duration-500 group-hover:scale-[1.07]"
+                    className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 object-contain rounded-2xl transition-all duration-500 group-hover:scale-[1.07]"
                     style={{
                       border: '1px solid rgba(212,175,55,0.2)',
                       boxShadow: '0 4px 30px rgba(0,0,0,0.65), inset 0 1px 0 rgba(212,175,55,0.08)',

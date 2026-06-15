@@ -45,7 +45,7 @@ export default function App() {
         <CartProvider>
           <ChatNotifProvider>
           <BrowserRouter>
-            <div className="min-h-screen flex flex-col bg-charcoal-dark">
+            <div className="min-h-screen flex flex-col bg-charcoal-dark overflow-x-hidden">
               <Navbar />
               <main className="flex-1">
                 <Routes>
