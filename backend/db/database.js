@@ -218,13 +218,13 @@ async function seedSampleAmulets() {
 
 async function seedSellerProfiles() {
   const sellers = [
-    { username: 'kanokpon', facebook_url: 'https://www.facebook.com/share/1Msx46aT6c/?mibextid=wwXIfr' },
+    { username: 'kanokpon', facebook_url: 'https://www.facebook.com/share/p/1BkWwcHePP/' },
     { username: 'sorawit',  facebook_url: 'https://www.facebook.com/share/1Ma34JZ9yf/?mibextid=wwXIfr' },
     { username: 'jermsak',  facebook_url: 'https://www.facebook.com/ceim.sakdi.nwl.seux' },
   ];
   for (const s of sellers) {
     await pool.query(
-      'INSERT INTO seller_profiles (username, facebook_url) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
+      'INSERT INTO seller_profiles (username, facebook_url) VALUES ($1, $2) ON CONFLICT (username) DO UPDATE SET facebook_url = EXCLUDED.facebook_url',
       [s.username, s.facebook_url]
     );
   }

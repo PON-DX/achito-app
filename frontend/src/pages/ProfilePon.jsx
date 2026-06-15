@@ -156,7 +156,7 @@ export default function ProfilePon() {
           <p className="text-gold/50 text-xs tracking-[0.4em] uppercase mb-2">{t('profile.contact_title')}</p>
           <p className="text-cream-muted text-sm mb-6">{t('profile.contact_desc')}</p>
           <a
-            href="https://www.facebook.com/share/1Msx46aT6c/?mibextid=wwXIfr"
+            href="https://www.facebook.com/share/p/1BkWwcHePP/"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-gold inline-flex items-center gap-3 px-8 py-3 text-sm"
