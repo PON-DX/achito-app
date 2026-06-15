@@ -59,7 +59,6 @@ export default function AmuletDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
-  const [contacting, setContacting] = useState(false);
 
   useEffect(() => {
     setActiveIdx(0);
@@ -185,21 +184,9 @@ export default function AmuletDetail() {
     return canvas;
   };
 
-  const handleContactSeller = async () => {
-    // เปิด Facebook ก่อนเลย (synchronous = browser ไม่ block)
+  const handleContactSeller = () => {
     const fbUrl = amulet.seller_facebook_url || 'https://www.facebook.com';
     window.open(fbUrl, '_blank', 'noopener,noreferrer');
-
-    // แล้วค่อย generate รูป + download
-    setContacting(true);
-    try {
-      const canvas = await generateProductCard();
-      const link = document.createElement('a');
-      link.download = `${(amulet.name || 'amulet').replace(/\s+/g, '_')}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch {}
-    setContacting(false);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="text-gold font-serif text-xl animate-pulse">{t('common.loading')}</div></div>;
@@ -320,18 +307,11 @@ export default function AmuletDetail() {
           <div className="flex gap-3 mt-2">
             <button
               onClick={handleContactSeller}
-              disabled={contacting || amulet.status === 'sold_out'}
+              disabled={amulet.status === 'sold_out'}
               className="flex-1 py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-300 hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8941F 100%)', color: '#0a0803', boxShadow: '0 4px 24px rgba(212,175,55,0.28)' }}
             >
-              {contacting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-[#0a0803]/30 border-t-[#0a0803] rounded-full animate-spin" />
-                  กำลังสร้างรูป...
-                </>
-              ) : amulet.status === 'sold_out' ? (
-                t('product.unavailable')
-              ) : (
+              {amulet.status === 'sold_out' ? t('product.unavailable') : (
                 <>
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -343,11 +323,6 @@ export default function AmuletDetail() {
             <button onClick={() => navigate(-1)} className="btn-outline-gold px-5">{t('product.back')}</button>
           </div>
 
-          {amulet.status === 'available' && (
-            <p className="text-cream-muted/50 text-xs text-center -mt-2">
-              กดเพื่อดาวน์โหลดรูปสินค้าและเปิด Facebook ผู้ขาย
-            </p>
-          )}
 
           {/* Trust badges */}
           <div className="flex flex-wrap gap-2">
