@@ -174,6 +174,7 @@ async function initializeSchema() {
   `);
 
   await pool.query('ALTER TABLE amulets ADD COLUMN IF NOT EXISTS seller_username TEXT');
+  await pool.query("UPDATE amulets SET seller_username = 'kanokpon' WHERE seller_username IS NULL");
 
   await seedSellerProfiles();
 
