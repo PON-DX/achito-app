@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
       params.push(status);
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += " ORDER BY CASE WHEN status = 'sold_out' THEN 1 ELSE 0 END ASC, created_at DESC";
 
     const { rows } = await query(sql, params);
     res.json(rows);

@@ -303,7 +303,7 @@ export default function Home() {
               <div
                 key={a.id}
                 style={{
-                  opacity: gridVisible ? 1 : 0,
+                  opacity: gridVisible ? (a.status === 'sold_out' ? 0.5 : 1) : 0,
                   transform: gridVisible ? 'translateY(0)' : 'translateY(28px)',
                   transition: `opacity 0.6s ease ${i * 0.05}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${i * 0.05}s`,
                 }}
