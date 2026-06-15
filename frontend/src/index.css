@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Grain texture — makes everything feel tangible ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.038;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
 @layer base {
   body {
     @apply bg-charcoal-dark text-cream font-sans;
@@ -14,39 +27,89 @@
 @layer components {
   /* ─── Glassmorphism Variants ──────────────────── */
   .glass {
-    background: rgba(22, 17, 6, 0.58);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(212, 175, 55, 0.12);
+    background: rgba(20, 15, 5, 0.62);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(212, 175, 55, 0.13);
+    box-shadow:
+      inset 0 1px 0 rgba(212,175,55,0.07),
+      inset 0 -1px 0 rgba(0,0,0,0.35),
+      0 4px 24px rgba(0,0,0,0.45);
   }
 
   .glass-card {
-    background: rgba(24, 19, 7, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(212, 175, 55, 0.1);
+    background: rgba(22, 17, 6, 0.7);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(212, 175, 55, 0.11);
+    box-shadow:
+      inset 0 1px 0 rgba(212,175,55,0.05),
+      0 4px 20px rgba(0,0,0,0.5);
   }
 
   .glass-strong {
-    background: rgba(12, 9, 3, 0.82);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    background: linear-gradient(135deg, rgba(16,12,4,0.92) 0%, rgba(10,7,2,0.96) 100%);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(212,175,55,0.12),
+      inset 0 -1px 0 rgba(0,0,0,0.5),
+      0 8px 40px rgba(0,0,0,0.65),
+      0 0 80px rgba(0,0,0,0.3);
   }
 
   .glass-nav {
-    background: rgba(10, 8, 2, 0.85);
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
+    background: rgba(8, 6, 2, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 1px 0 rgba(212,175,55,0.12),
+      0 4px 30px rgba(0,0,0,0.6);
   }
 
-  /* ─── Card (Glassmorphism) ─────────────────────── */
+  /* ─── Sacred Glass — premium panel ────────────── */
+  .sacred-glass {
+    background: linear-gradient(160deg, rgba(26,20,7,0.88) 0%, rgba(12,9,2,0.94) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(212,175,55,0.2);
+    box-shadow:
+      inset 0 1px 0 rgba(212,175,55,0.15),
+      inset 0 -1px 0 rgba(0,0,0,0.6),
+      inset 1px 0 0 rgba(212,175,55,0.04),
+      inset -1px 0 0 rgba(212,175,55,0.04),
+      0 12px 50px rgba(0,0,0,0.7),
+      0 0 100px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  /* Inner ring for sacred-glass */
+  .sacred-glass::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(212,175,55,0.06);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── Card ─────────────────────────────────────── */
   .card {
-    @apply rounded-xl overflow-hidden transition-all duration-500 cursor-pointer;
-    background: rgba(24, 19, 7, 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(212, 175, 55, 0.1);
+    @apply rounded-xl overflow-hidden cursor-pointer;
+    background: rgba(22, 17, 6, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(212, 175, 55, 0.11);
+    transition:
+      transform 0.5s cubic-bezier(0.22,1,0.36,1),
+      box-shadow 0.5s cubic-bezier(0.22,1,0.36,1),
+      border-color 0.5s ease,
+      background 0.5s ease;
+    box-shadow:
+      inset 0 1px 0 rgba(212,175,55,0.07),
+      0 4px 24px rgba(0,0,0,0.55),
+      0 1px 3px rgba(0,0,0,0.4);
   }
 
   /* ─── Buttons ──────────────────────────────────── */
@@ -54,17 +117,25 @@
     @apply text-charcoal-dark font-semibold px-6 py-2.5 rounded
            transition-all duration-300
            focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-charcoal-dark;
-    background: linear-gradient(135deg, #C9A227 0%, #F5E17A 50%, #C9A227 100%);
-    background-size: 200% auto;
+    background: linear-gradient(135deg, #B8941F 0%, #D4AF37 35%, #F0D060 55%, #D4AF37 75%, #B8941F 100%);
+    background-size: 250% auto;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 0 14px rgba(212,175,55,0.3), 0 4px 16px rgba(0,0,0,0.35);
+    box-shadow:
+      0 0 18px rgba(212,175,55,0.4),
+      0 4px 20px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.2),
+      inset 0 -1px 0 rgba(0,0,0,0.15);
   }
 
   .btn-gold:hover {
     background-position: right center;
-    box-shadow: 0 0 28px rgba(212,175,55,0.55), 0 4px 20px rgba(0,0,0,0.45);
-    transform: translateY(-1px);
+    box-shadow:
+      0 0 35px rgba(212,175,55,0.65),
+      0 0 70px rgba(212,175,55,0.2),
+      0 6px 24px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: translateY(-2px);
   }
 
   .btn-gold::after {
@@ -72,18 +143,21 @@
     position: absolute;
     top: -50%; left: -75%;
     width: 50%; height: 200%;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
     transform: skewX(-20deg);
-    transition: left 0.5s ease;
+    transition: left 0.6s ease;
   }
-
   .btn-gold:hover::after { left: 125%; }
 
   .btn-outline-gold {
     @apply border border-gold text-gold font-semibold px-6 py-2.5 rounded
-           hover:bg-gold hover:text-charcoal-dark
            transition-all duration-300
            focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-charcoal-dark;
+    box-shadow: 0 0 12px rgba(212,175,55,0.08);
+  }
+  .btn-outline-gold:hover {
+    @apply bg-gold text-charcoal-dark;
+    box-shadow: 0 0 24px rgba(212,175,55,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
   }
 
   .btn-danger {
@@ -92,48 +166,39 @@
            focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-charcoal;
   }
 
-  /* ─── Input (Glass) ────────────────────────────── */
+  /* ─── Input ────────────────────────────────────── */
   .input-field {
     @apply w-full rounded-lg px-4 py-2.5 text-cream
            placeholder-cream-muted focus:outline-none
            transition-all duration-300;
-    background: rgba(14, 11, 4, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(212, 175, 55, 0.15);
+    background: rgba(12, 9, 3, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(212, 175, 55, 0.14);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.35);
   }
-
   .input-field:focus {
-    border-color: rgba(212, 175, 55, 0.5);
-    background: rgba(18, 14, 5, 0.85);
-    box-shadow: 0 0 14px rgba(212,175,55,0.12);
+    border-color: rgba(212, 175, 55, 0.52);
+    background: rgba(16, 12, 4, 0.88);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.35), 0 0 18px rgba(212,175,55,0.12);
   }
 
-  .label {
-    @apply block text-cream-dark text-sm font-medium mb-1.5;
-  }
+  .label { @apply block text-cream-dark text-sm font-medium mb-1.5; }
+  .section-title { @apply font-serif text-3xl text-cream mb-2; }
+  .gold-divider { @apply w-16 h-0.5 bg-gold mx-auto my-4; }
 
-  .section-title {
-    @apply font-serif text-3xl text-cream mb-2;
-  }
-
-  .gold-divider {
-    @apply w-16 h-0.5 bg-gold mx-auto my-4;
-  }
-
-  /* ─── Badges ───────────────────────────────────── */
+  /* ─── Status Badges ────────────────────────────── */
   .status-badge {
     @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
-
   .status-available {
     @apply status-badge text-emerald-300;
     background: rgba(6, 78, 59, 0.5);
     border: 1px solid rgba(52, 211, 153, 0.3);
+    box-shadow: 0 0 10px rgba(52,211,153,0.08);
   }
-
   .status-sold-out {
     @apply status-badge text-red-300;
     background: rgba(127, 29, 29, 0.5);
@@ -142,34 +207,41 @@
 }
 
 /* ================================================
-   CARD HOVER — PREMIUM GLASS
+   CARD HOVER — MULTI-LAYER DEPTH
    ================================================ */
 .card:hover {
-  transform: translateY(-9px) scale(1.02);
-  background: rgba(30, 24, 8, 0.88);
-  border-color: rgba(212, 175, 55, 0.55);
+  transform: translateY(-12px) scale(1.025);
+  background: rgba(28, 22, 7, 0.92);
+  border-color: rgba(212, 175, 55, 0.6);
   box-shadow:
-    0 0 0 1px rgba(212,175,55,0.12),
-    0 0 50px rgba(212,175,55,0.3),
-    0 24px 64px rgba(0,0,0,0.75);
+    inset 0 1px 0 rgba(212,175,55,0.2),
+    0 0 0 1px rgba(212,175,55,0.18),
+    0 0 30px rgba(212,175,55,0.28),
+    0 0 70px rgba(212,175,55,0.1),
+    0 0 120px rgba(212,175,55,0.04),
+    0 28px 70px rgba(0,0,0,0.85),
+    0 8px 20px rgba(0,0,0,0.6);
 }
 
 /* ================================================
    SCROLLBAR
    ================================================ */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: rgba(8,6,2,0.9); }
-::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.55); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.85); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(6,4,1,0.95); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(212,175,55,0.3), rgba(212,175,55,0.6));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.88); }
 
 /* ================================================
    KEYFRAMES
    ================================================ */
 @keyframes sparkle-twinkle {
-  0%, 100% { opacity: 0.05; transform: scale(0.7) rotate(0deg); }
-  30%       { opacity: 0.55; transform: scale(1.1) rotate(12deg); }
-  60%       { opacity: 0.8;  transform: scale(1.3) rotate(25deg); }
-  80%       { opacity: 0.3;  transform: scale(0.9) rotate(18deg); }
+  0%, 100% { opacity: 0.04; transform: scale(0.6) rotate(0deg); }
+  30%       { opacity: 0.6;  transform: scale(1.15) rotate(15deg); }
+  60%       { opacity: 0.85; transform: scale(1.35) rotate(28deg); }
+  80%       { opacity: 0.25; transform: scale(0.85) rotate(20deg); }
 }
 
 @keyframes rotate-sacred {
@@ -178,12 +250,12 @@
 }
 
 @keyframes hero-entrance {
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(32px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes logos-entrance {
-  from { opacity: 0; transform: translateX(24px); }
+  from { opacity: 0; transform: translateX(28px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
@@ -198,80 +270,120 @@
 }
 
 @keyframes nav-aura {
-  0%, 100% { box-shadow: 0 1px 0 rgba(212,175,55,0.1), 0 4px 24px rgba(0,0,0,0.4); }
-  50%       { box-shadow: 0 1px 0 rgba(212,175,55,0.2), 0 4px 32px rgba(212,175,55,0.06); }
+  0%, 100% { box-shadow: 0 1px 0 rgba(212,175,55,0.12), 0 4px 30px rgba(0,0,0,0.6); }
+  50%       { box-shadow: 0 1px 0 rgba(212,175,55,0.25), 0 4px 40px rgba(212,175,55,0.07); }
 }
 
 @keyframes sacred-icon-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.25); }
-  50%       { box-shadow: 0 0 0 4px rgba(212,175,55,0.08), 0 0 20px rgba(212,175,55,0.12); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.2); }
+  50%       { box-shadow: 0 0 0 5px rgba(212,175,55,0.06), 0 0 24px rgba(212,175,55,0.14); }
 }
 
 @keyframes sacred-aura {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(212,175,55,0.25), 0 0 50px rgba(212,175,55,0.08);
-    border-color: rgba(212,175,55,0.3);
+    box-shadow: 0 0 24px rgba(212,175,55,0.28), 0 0 60px rgba(212,175,55,0.08);
+    border-color: rgba(212,175,55,0.32);
   }
   50% {
-    box-shadow: 0 0 40px rgba(212,175,55,0.45), 0 0 90px rgba(212,175,55,0.15);
-    border-color: rgba(212,175,55,0.65);
+    box-shadow: 0 0 48px rgba(212,175,55,0.5), 0 0 100px rgba(212,175,55,0.18);
+    border-color: rgba(212,175,55,0.7);
   }
 }
 
 @keyframes story-panel-glow {
-  0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-  50%       { box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 30px rgba(212,175,55,0.08); }
+  0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
+  50%       { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 40px rgba(212,175,55,0.07); }
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-20px); }
+}
+
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.22; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.1); }
+}
+
+@keyframes count-glow {
+  0%, 100% { text-shadow: 0 0 20px rgba(212,175,55,0.35); }
+  50%       { text-shadow: 0 0 50px rgba(212,175,55,0.95), 0 0 100px rgba(212,175,55,0.35); }
+}
+
+/* Ember rising particles */
+@keyframes ember-rise {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  15%  { opacity: 0.7; }
+  85%  { opacity: 0.4; }
+  100% { transform: translateY(-90px) translateX(var(--dx,8px)) scale(0.5); opacity: 0; }
+}
+
+/* Breathing ambient glow */
+@keyframes deep-breathe {
+  0%, 100% { opacity: 0.06; transform: scale(1); }
+  50%       { opacity: 0.14; transform: scale(1.06); }
+}
+
+/* Subtle light-ray sweep */
+@keyframes ray-sweep {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  30%  { opacity: 0.06; }
+  70%  { opacity: 0.06; }
+  100% { transform: translateX(250%) skewX(-18deg); opacity: 0; }
+}
+
+/* Gold border gradient animate */
+@keyframes border-spin {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* ================================================
    ANIMATION UTILITIES
    ================================================ */
-.animate-hero-entrance {
-  animation: hero-entrance 0.9s cubic-bezier(0.22,1,0.36,1) both;
-}
-
-.animate-logos-entrance {
-  animation: logos-entrance 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s both;
-}
-
-.rotate-sacred-slow {
-  animation: rotate-sacred 30s linear infinite;
-  display: inline-block;
-}
-
-.animate-nav-aura {
-  animation: nav-aura 4s ease-in-out infinite;
-}
-
-.sacred-icon-anim {
-  animation: sacred-icon-pulse 3s ease-in-out infinite;
-}
-
-.animate-sacred-aura {
-  border: 2px solid rgba(212,175,55,0.35);
-  animation: sacred-aura 3s ease-in-out infinite;
-}
+.animate-hero-entrance     { animation: hero-entrance 1s cubic-bezier(0.22,1,0.36,1) both; }
+.animate-logos-entrance    { animation: logos-entrance 1s cubic-bezier(0.22,1,0.36,1) 0.35s both; }
+.rotate-sacred-slow        { animation: rotate-sacred 32s linear infinite; display: inline-block; }
+.animate-nav-aura          { animation: nav-aura 5s ease-in-out infinite; }
+.sacred-icon-anim          { animation: sacred-icon-pulse 3.5s ease-in-out infinite; }
+.animate-sacred-aura       { border: 2px solid rgba(212,175,55,0.35); animation: sacred-aura 3.5s ease-in-out infinite; }
+.animate-float             { animation: float-y 5.5s ease-in-out infinite; }
+.animate-float-slow        { animation: float-y 8.5s ease-in-out infinite; }
+.animate-float-delayed     { animation: float-y 7s ease-in-out 2.5s infinite; }
+.animate-glow-breathe      { animation: glow-breathe 5s ease-in-out infinite; }
+.animate-count-glow        { animation: count-glow 3s ease-in-out infinite; }
+.animate-deep-breathe      { animation: deep-breathe 7s ease-in-out infinite; }
+.animate-ray-sweep         { animation: ray-sweep 8s ease-in-out infinite; }
 
 /* ================================================
-   GOLD SHIMMER
+   GOLD SHIMMER TEXT
    ================================================ */
 .gold-shimmer {
   background: linear-gradient(
     90deg,
-    #A07800 0%,
-    #D4AF37 20%,
-    #F5E17A 40%,
-    #FFD700 50%,
-    #F5E17A 60%,
-    #D4AF37 80%,
-    #A07800 100%
+    #8A6500 0%,
+    #D4AF37 18%,
+    #F5E17A 36%,
+    #FFE566 50%,
+    #F5E17A 64%,
+    #D4AF37 82%,
+    #8A6500 100%
   );
   background-size: 300% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmer 2.5s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(212,175,55,0.3));
+  animation: shimmer 3s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(212,175,55,0.35));
+}
+
+/* Gold glow on normal text */
+.text-gold-glow {
+  text-shadow:
+    0 0 20px rgba(212,175,55,0.55),
+    0 0 50px rgba(212,175,55,0.2),
+    0 0 100px rgba(212,175,55,0.08);
 }
 
 /* ================================================
@@ -282,100 +394,118 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(212,175,55,0.25) 20%,
+    rgba(212,175,55,0.15) 15%,
     rgba(212,175,55,1) 50%,
-    rgba(212,175,55,0.25) 80%,
+    rgba(212,175,55,0.15) 85%,
     transparent 100%
   );
   background-size: 200% auto;
-  animation: gold-flow 3s ease-in-out infinite;
+  animation: gold-flow 4s ease-in-out infinite;
+}
+
+/* Ornate section divider */
+.ornate-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.25rem 0;
+}
+.ornate-divider::before,
+.ornate-divider::after {
+  content: '';
+  flex: 1;
+  max-width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5));
+}
+.ornate-divider::after {
+  background: linear-gradient(90deg, rgba(212,175,55,0.5), transparent);
 }
 
 /* ================================================
-   STORY PANEL HOVER
+   STORY PANEL
    ================================================ */
 .story-panel {
-  transition: transform 0.5s cubic-bezier(0.22,1,0.36,1), border-color 0.5s ease, box-shadow 0.5s ease;
+  transition: transform 0.55s cubic-bezier(0.22,1,0.36,1), border-color 0.55s ease, box-shadow 0.55s ease;
+  position: relative;
+  overflow: hidden;
+}
+.story-panel::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.7) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.55s ease;
 }
 .story-panel:hover {
-  border-color: rgba(212,175,55,0.42);
-  transform: translateY(-6px);
-  box-shadow: 0 16px 50px rgba(0,0,0,0.55), 0 0 60px rgba(212,175,55,0.12);
+  border-color: rgba(212,175,55,0.45);
+  transform: translateY(-8px);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.65),
+    0 0 80px rgba(212,175,55,0.1),
+    inset 0 1px 0 rgba(212,175,55,0.1);
 }
+.story-panel:hover::after { opacity: 1; }
 
 /* ================================================
-   PREMIUM — FLOATING & GLOW ADDITIONS
+   ORB GLOW
    ================================================ */
-@keyframes float-y {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-18px); }
-}
-
-@keyframes glow-breathe {
-  0%, 100% { opacity: 0.25; transform: scale(1); }
-  50%       { opacity: 0.55; transform: scale(1.08); }
-}
-
-@keyframes count-glow {
-  0%, 100% { text-shadow: 0 0 20px rgba(212,175,55,0.35); }
-  50%       { text-shadow: 0 0 45px rgba(212,175,55,0.9), 0 0 90px rgba(212,175,55,0.3); }
-}
-
-.animate-float         { animation: float-y 5s ease-in-out infinite; }
-.animate-float-slow    { animation: float-y 8s ease-in-out infinite; }
-.animate-float-delayed { animation: float-y 6.5s ease-in-out 2.2s infinite; }
-.animate-glow-breathe  { animation: glow-breathe 5s ease-in-out infinite; }
-.animate-count-glow    { animation: count-glow 3s ease-in-out infinite; }
-
-/* ── Orb background glow ──────────────────────── */
 .orb-glow {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(80px);
+  filter: blur(90px);
 }
 
-/* ── Story panel watermark number ─────────────── */
+/* ================================================
+   SACRED NUMBER WATERMARK
+   ================================================ */
 .sacred-number {
   font-family: 'Playfair Display', serif;
   font-size: 7rem;
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(212,175,55,0.1);
+  -webkit-text-stroke: 1px rgba(212,175,55,0.09);
   position: absolute;
   top: -0.5rem;
   right: 0.75rem;
   user-select: none;
   pointer-events: none;
-  transition: -webkit-text-stroke-color 0.5s ease;
+  transition: -webkit-text-stroke-color 0.55s ease;
 }
-.story-panel:hover .sacred-number {
-  -webkit-text-stroke-color: rgba(212,175,55,0.24);
-}
+.story-panel:hover .sacred-number { -webkit-text-stroke-color: rgba(212,175,55,0.26); }
 
-/* ── Trust badge chip ─────────────────────────── */
+/* ================================================
+   TRUST BADGE CHIP
+   ================================================ */
 .trust-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
-  background: rgba(14, 11, 4, 0.75);
-  border: 1px solid rgba(212,175,55,0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(12, 9, 3, 0.8);
+  border: 1px solid rgba(212,175,55,0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   font-size: 0.7rem;
   color: #D9D0BB;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.025em;
+  box-shadow: inset 0 1px 0 rgba(212,175,55,0.06), 0 2px 8px rgba(0,0,0,0.3);
   transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 .trust-chip:hover {
-  border-color: rgba(212,175,55,0.5);
-  box-shadow: 0 0 14px rgba(212,175,55,0.15);
+  border-color: rgba(212,175,55,0.52);
+  box-shadow: 0 0 18px rgba(212,175,55,0.18), inset 0 1px 0 rgba(212,175,55,0.1);
   transform: translateY(-1px);
 }
 
-/* ── Stats block ──────────────────────────────── */
+/* ================================================
+   STAT BLOCK
+   ================================================ */
 .stat-block { text-align: center; padding: 0.75rem 0; }
 .stat-value {
   font-family: 'Playfair Display', serif;
@@ -392,14 +522,16 @@
   margin-top: 0.3rem;
 }
 
-/* ── Card top shimmer line ────────────────────── */
+/* ================================================
+   CARD TOP SHIMMER LINE
+   ================================================ */
 .card-shimmer-line {
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.9) 50%, transparent 100%);
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.95) 50%, transparent 100%);
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.45s ease;
   z-index: 2;
   pointer-events: none;
 }
