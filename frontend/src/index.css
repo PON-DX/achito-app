@@ -194,13 +194,17 @@ body::before {
     -webkit-backdrop-filter: blur(6px);
   }
   .status-available {
-    @apply status-badge text-emerald-300;
+    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold text-emerald-300;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     background: rgba(6, 78, 59, 0.5);
     border: 1px solid rgba(52, 211, 153, 0.3);
     box-shadow: 0 0 10px rgba(52,211,153,0.08);
   }
   .status-sold-out {
-    @apply status-badge text-red-300;
+    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold text-red-300;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     background: rgba(127, 29, 29, 0.5);
     border: 1px solid rgba(248, 113, 113, 0.3);
   }
