@@ -186,6 +186,11 @@ export default function AmuletDetail() {
   };
 
   const handleContactSeller = async () => {
+    // เปิด Facebook ก่อนเลย (synchronous = browser ไม่ block)
+    const fbUrl = amulet.seller_facebook_url || 'https://www.facebook.com';
+    window.open(fbUrl, '_blank', 'noopener,noreferrer');
+
+    // แล้วค่อย generate รูป + download
     setContacting(true);
     try {
       const canvas = await generateProductCard();
@@ -194,8 +199,6 @@ export default function AmuletDetail() {
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch {}
-    const fbUrl = amulet.seller_facebook_url || 'https://www.facebook.com';
-    window.open(fbUrl, '_blank', 'noopener,noreferrer');
     setContacting(false);
   };
 
