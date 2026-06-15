@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../contexts/CartContext';
 import { useLang } from '../contexts/LanguageContext';
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%232D2D2D'/%3E%3Ccircle cx='300' cy='260' r='90' fill='none' stroke='%23D4AF37' stroke-width='2'/%3E%3Ctext x='300' y='278' font-family='serif' font-size='72' fill='%23D4AF37' text-anchor='middle'%3E%E2%98%B8%3C/text%3E%3C/svg%3E";
@@ -17,19 +15,51 @@ function DetailRow({ label, value }) {
   );
 }
 
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const lines = [];
+  let cur = '';
+  for (const ch of text) {
+    const test = cur + ch;
+    if (ctx.measureText(test).width > maxWidth && cur) {
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.slice(0, 3);
+}
+
+async function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
 export default function AmuletDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { addToCart } = useCart();
   const { t } = useLang();
   const [amulet, setAmulet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cartMsg, setCartMsg] = useState('');
-  const [addingToCart, setAddingToCart] = useState(false);
-  const [qty, setQty] = useState(1);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [contacting, setContacting] = useState(false);
 
   useEffect(() => {
     setActiveIdx(0);
@@ -39,19 +69,134 @@ export default function AmuletDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleAddToCart = async () => {
-    if (!user) { navigate('/login'); return; }
-    setAddingToCart(true);
-    try {
-      await addToCart(amulet.id, qty);
-      setCartMsg(t('product.added_to_cart'));
-      setTimeout(() => setCartMsg(''), 2500);
-    } catch (err) {
-      setCartMsg(err.response?.data?.error || 'Error adding to cart');
-      setTimeout(() => setCartMsg(''), 2500);
-    } finally {
-      setAddingToCart(false);
+  const generateProductCard = async () => {
+    const W = 900, H = 520;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#0e0b04');
+    bg.addColorStop(1, '#1a1408');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Gold border
+    ctx.strokeStyle = 'rgba(212,175,55,0.55)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, W - 20, H - 20);
+    ctx.strokeStyle = 'rgba(212,175,55,0.12)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(18, 18, W - 36, H - 36);
+
+    // Header
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 19px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✦  อชิโต — ACHITO AMULET SHOP  ✦', W / 2, 54);
+    ctx.strokeStyle = 'rgba(212,175,55,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, 68); ctx.lineTo(W - 40, 68); ctx.stroke();
+
+    // Product image
+    const imgSrc = (amulet.images && amulet.images.length > 0) ? amulet.images[0] : amulet.image_url;
+    if (imgSrc) {
+      try {
+        const img = await loadImage(imgSrc);
+        const imgSize = 380;
+        ctx.save();
+        roundRect(ctx, 38, 84, imgSize, imgSize, 10);
+        ctx.clip();
+        ctx.drawImage(img, 38, 84, imgSize, imgSize);
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(212,175,55,0.3)';
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, 38, 84, imgSize, imgSize, 10);
+        ctx.stroke();
+      } catch {}
     }
+
+    // Right side content
+    const rx = 450;
+    let curY = 108;
+
+    // Category badge
+    ctx.fillStyle = 'rgba(212,175,55,0.1)';
+    ctx.strokeStyle = 'rgba(212,175,55,0.35)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, rx, 88, 200, 30, 15);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('  ' + (amulet.category || ''), rx + 14, 108);
+
+    // Product name
+    curY = 152;
+    ctx.fillStyle = '#f5e6c0';
+    ctx.font = 'bold 30px Georgia, serif';
+    const nameLines = wrapText(ctx, amulet.name, W - rx - 45);
+    nameLines.forEach(line => { ctx.fillText(line, rx, curY); curY += 38; });
+
+    // Temple
+    if (amulet.temple) {
+      ctx.fillStyle = 'rgba(212,175,55,0.7)';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('☸  ' + amulet.temple, rx, curY + 8);
+      curY += 34;
+    }
+
+    // Price
+    curY += 18;
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 46px Georgia, serif';
+    ctx.fillText('฿' + Number(amulet.price).toLocaleString(), rx, curY);
+    curY += 46;
+
+    // Detail line
+    const detail = [amulet.batch_version, amulet.year ? `พ.ศ. ${amulet.year}` : ''].filter(Boolean).join(' · ');
+    if (detail) {
+      ctx.fillStyle = 'rgba(245,230,192,0.45)';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(detail, rx, curY);
+      curY += 30;
+    }
+
+    // Divider
+    curY += 8;
+    ctx.strokeStyle = 'rgba(212,175,55,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(rx, curY); ctx.lineTo(W - 45, curY); ctx.stroke();
+    curY += 26;
+
+    // Contact prompt
+    ctx.fillStyle = 'rgba(212,175,55,0.75)';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('📲  ติดต่อสอบถาม / สั่งซื้อผ่าน Facebook ด้านล่าง', rx, curY);
+
+    // Footer
+    ctx.fillStyle = 'rgba(212,175,55,0.28)';
+    ctx.font = '13px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✦  พระผงพรายสมุทร อชิโต  ✦', W / 2, H - 24);
+
+    return canvas;
+  };
+
+  const handleContactSeller = async () => {
+    setContacting(true);
+    try {
+      const canvas = await generateProductCard();
+      const link = document.createElement('a');
+      link.download = `${(amulet.name || 'amulet').replace(/\s+/g, '_')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch {}
+    const fbUrl = amulet.seller_facebook_url || 'https://www.facebook.com';
+    window.open(fbUrl, '_blank', 'noopener,noreferrer');
+    setContacting(false);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="text-gold font-serif text-xl animate-pulse">{t('common.loading')}</div></div>;
@@ -152,11 +297,6 @@ export default function AmuletDetail() {
           <div className="flex items-baseline gap-2 py-5" style={{ borderTop: '1px solid rgba(212,175,55,0.15)', borderBottom: '1px solid rgba(212,175,55,0.15)' }}>
             <span className="font-serif text-4xl text-gold font-semibold" style={{ textShadow: '0 0 30px rgba(212,175,55,0.35)' }}>฿{Number(amulet.price).toLocaleString()}</span>
             <span className="text-cream-muted text-sm">THB</span>
-            {amulet.status === 'available' && amulet.stock !== null && amulet.stock !== undefined && (
-              <span className={`ml-3 text-xs px-2 py-0.5 rounded-full border ${amulet.stock <= 5 ? 'text-red-400 border-red-800 bg-red-900/20' : 'text-cream-muted border-charcoal-light'}`}>
-                {t('product.stock_left')} {amulet.stock} {t('product.stock_unit')}
-              </span>
-            )}
           </div>
 
           <div className="glass rounded-xl px-5 py-1" style={{ borderColor: 'rgba(212,175,55,0.1)' }}>
@@ -173,52 +313,38 @@ export default function AmuletDetail() {
             </div>
           )}
 
-          {/* Cart toast */}
-          {cartMsg && (
-            <div
-              className="text-cream text-sm text-center py-3 px-4 rounded-xl"
-              style={{
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.3)',
-                boxShadow: '0 0 20px rgba(212,175,55,0.15)',
-              }}
-            >
-              ✦ {cartMsg} ✦
-            </div>
-          )}
-
-          {/* Quantity selector */}
-          {amulet.status === 'available' && (
-            <div className="flex items-center gap-4">
-              <span className="text-cream-muted text-sm">{t('cart.quantity')}:</span>
-              <div className="flex items-center gap-0 rounded-lg overflow-hidden border border-gold/25">
-                <button
-                  onClick={() => setQty(q => Math.max(1, q - 1))}
-                  className="w-9 h-9 flex items-center justify-center text-gold hover:bg-gold/10 transition-colors font-bold text-lg"
-                >−</button>
-                <span className="w-10 text-center text-cream font-semibold text-base" style={{ background: 'rgba(12,10,3,0.6)' }}>
-                  {qty}
-                </span>
-                <button
-                  onClick={() => setQty(q => amulet.stock !== null ? Math.min(amulet.stock, q + 1) : q + 1)}
-                  className="w-9 h-9 flex items-center justify-center text-gold hover:bg-gold/10 transition-colors font-bold text-lg"
-                >+</button>
-              </div>
-            </div>
-          )}
-
+          {/* Contact seller */}
           <div className="flex gap-3 mt-2">
-            {amulet.status === 'available' ? (
-              <button onClick={handleAddToCart} disabled={addingToCart} className="flex-1 btn-gold py-3 flex items-center justify-center gap-2">
-                {addingToCart ? '...' : <>🛒 {t('product.add_to_cart')}</>}
-              </button>
-            ) : (
-              <div className="flex-1 py-3 rounded text-center bg-charcoal-light text-cream-muted cursor-not-allowed border border-charcoal-light">
-                {t('product.unavailable')}
-              </div>
-            )}
+            <button
+              onClick={handleContactSeller}
+              disabled={contacting || amulet.status === 'sold_out'}
+              className="flex-1 py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-300 hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8941F 100%)', color: '#0a0803', boxShadow: '0 4px 24px rgba(212,175,55,0.28)' }}
+            >
+              {contacting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-[#0a0803]/30 border-t-[#0a0803] rounded-full animate-spin" />
+                  กำลังสร้างรูป...
+                </>
+              ) : amulet.status === 'sold_out' ? (
+                t('product.unavailable')
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  ติดต่อผู้ขาย
+                </>
+              )}
+            </button>
             <button onClick={() => navigate(-1)} className="btn-outline-gold px-5">{t('product.back')}</button>
           </div>
+
+          {amulet.status === 'available' && (
+            <p className="text-cream-muted/50 text-xs text-center -mt-2">
+              กดเพื่อดาวน์โหลดรูปสินค้าและเปิด Facebook ผู้ขาย
+            </p>
+          )}
 
           {/* Trust badges */}
           <div className="flex flex-wrap gap-2">
@@ -226,13 +352,6 @@ export default function AmuletDetail() {
             <span className="trust-chip">✈️ จัดส่งทั่วไทย</span>
             <span className="trust-chip">📦 แพ็คอย่างดี</span>
           </div>
-
-          {!user && amulet.status === 'available' && (
-            <p className="text-center text-cream-muted text-xs">
-              {t('product.login_to_buy')}{' '}
-              <Link to="/login" className="text-gold hover:underline">{t('nav.login')}</Link>
-            </p>
-          )}
         </div>
       </div>
     </div>

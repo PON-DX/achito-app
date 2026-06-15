@@ -166,6 +166,17 @@ async function initializeSchema() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS seller_profiles (
+      username TEXT PRIMARY KEY,
+      facebook_url TEXT NOT NULL
+    )
+  `);
+
+  await pool.query('ALTER TABLE amulets ADD COLUMN IF NOT EXISTS seller_username TEXT');
+
+  await seedSellerProfiles();
+
   await seedAdmin();
   await seedSampleAmulets();
   console.log('✅ Database schema initialized.');
@@ -203,6 +214,20 @@ async function seedSampleAmulets() {
     );
   }
   console.log('✅ Sample amulets seeded.');
+}
+
+async function seedSellerProfiles() {
+  const sellers = [
+    { username: 'kanokpon', facebook_url: 'https://www.facebook.com/share/1Msx46aT6c/?mibextid=wwXIfr' },
+    { username: 'sorawit',  facebook_url: 'https://www.facebook.com/share/1Ma34JZ9yf/?mibextid=wwXIfr' },
+    { username: 'jermsak',  facebook_url: 'https://www.facebook.com/ceim.sakdi.nwl.seux' },
+  ];
+  for (const s of sellers) {
+    await pool.query(
+      'INSERT INTO seller_profiles (username, facebook_url) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
+      [s.username, s.facebook_url]
+    );
+  }
 }
 
 module.exports = { query, getClient, initializeSchema };

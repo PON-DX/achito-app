@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../contexts/CartContext';
 import { useLang } from '../contexts/LanguageContext';
 import { useChatNotif } from '../contexts/ChatNotifContext';
 
@@ -10,7 +9,6 @@ const LANG_NEXT_TEXT = { th: 'Switch to English', en: '切换到中文', zh: '�
 
 export default function Navbar() {
   const { isAdmin, user, logout } = useAuth();
-  const { count } = useCart();
   const { t, lang, toggleLang } = useLang();
   const { unread } = useChatNotif();
   const navigate = useNavigate();
@@ -53,19 +51,6 @@ export default function Navbar() {
               {LANG_LABEL[lang]}
             </button>
 
-            {/* Cart */}
-            {!isAdmin && (
-              <Link to="/cart" className="relative text-cream-dark hover:text-gold transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {count > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gold text-charcoal-dark text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {count > 9 ? '9+' : count}
-                  </span>
-                )}
-              </Link>
-            )}
 
             {user && !isAdmin && (
               <Link to="/my-orders" className={`text-sm font-medium transition-colors ${isActive('/my-orders')}`}>{t('nav.myOrders')}</Link>
@@ -115,16 +100,8 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile: cart + menu button */}
+          {/* Mobile: menu button */}
           <div className="md:hidden flex items-center gap-3">
-            {!isAdmin && (
-              <Link to="/cart" className="relative text-cream-dark">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {count > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gold text-charcoal-dark text-[10px] font-bold rounded-full flex items-center justify-center">{count}</span>}
-              </Link>
-            )}
             <button className="text-cream p-1" onClick={() => setMenuOpen(!menuOpen)}>
               <div className={`w-5 h-0.5 bg-current transition-all ${menuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
               <div className={`w-5 h-0.5 bg-current my-1 transition-all ${menuOpen ? 'opacity-0' : ''}`} />

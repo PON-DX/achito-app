@@ -112,6 +112,11 @@ export default function AmuletCard({ amulet }) {
             {t('product.year')}: {amulet.year}
           </p>
         )}
+        {amulet.seller_username && (
+          <p className="text-cream-muted/30 text-[10px] mt-1 flex items-center gap-1">
+            <span className="text-gold/20">⊹</span>{amulet.seller_username}
+          </p>
+        )}
       </div>
     </Link>
   );

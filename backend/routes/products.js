@@ -23,11 +23,13 @@ const upload = multer({
 async function getAmuletWithImages(id) {
   const { rows: [amulet] } = await query(`
     SELECT a.*,
-      COALESCE(json_agg(pi.image_url ORDER BY pi.sort_order) FILTER (WHERE pi.id IS NOT NULL), '[]'::json) AS images
+      COALESCE(json_agg(pi.image_url ORDER BY pi.sort_order) FILTER (WHERE pi.id IS NOT NULL), '[]'::json) AS images,
+      sp.facebook_url AS seller_facebook_url
     FROM amulets a
     LEFT JOIN product_images pi ON a.id = pi.product_id
+    LEFT JOIN seller_profiles sp ON a.seller_username = sp.username
     WHERE a.id = $1
-    GROUP BY a.id
+    GROUP BY a.id, sp.facebook_url
   `, [id]);
   return amulet;
 }
@@ -98,13 +100,14 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
     const image_url = files.length > 0 ? files[0].path : null;
 
     const { rows: [newAmulet] } = await query(`
-      INSERT INTO amulets (name, category, temple, batch_version, year, price, status, description, image_url, stock)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO amulets (name, category, temple, batch_version, year, price, status, description, image_url, stock, seller_username)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
       name, category, temple || null, batch_version || null, year || null,
       parseFloat(price), status || 'available', description || null, image_url,
       stock !== '' && stock !== undefined && stock !== null ? parseInt(stock) : null,
+      req.user?.username || null,
     ]);
 
     for (let i = 0; i < files.length; i++) {
