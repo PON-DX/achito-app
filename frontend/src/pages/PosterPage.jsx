@@ -30,7 +30,27 @@ export default function PosterPage() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(null);
   const fileRef = useRef();
+
+  const downloadPoster = async (poster) => {
+    setDownloading(poster.id);
+    try {
+      const res = await fetch(poster.image_url);
+      const blob = await res.blob();
+      const ext = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${poster.title.replace(/[^฀-๿a-zA-Z0-9\s]/g, '').trim() || 'poster'}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('ไม่สามารถดาวน์โหลดได้');
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   useEffect(() => {
     axios.get('/api/posters')
@@ -182,6 +202,23 @@ export default function PosterPage() {
                       <span className="text-cream/75 text-xs tracking-wide">ดูขนาดเต็ม</span>
                     </div>
 
+                    {/* Download button — bottom-right corner of image */}
+                    <button
+                      onClick={e => { e.stopPropagation(); downloadPoster(poster); }}
+                      disabled={downloading === poster.id}
+                      title="ดาวน์โหลด"
+                      className="absolute bottom-2 right-2 z-10 w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 disabled:opacity-40"
+                      style={{ background: 'rgba(8,5,1,0.88)', border: '1px solid rgba(212,175,55,0.45)', backdropFilter: 'blur(8px)' }}
+                    >
+                      {downloading === poster.id ? (
+                        <div className="w-3.5 h-3.5 border border-gold/30 border-t-gold rounded-full animate-spin" />
+                      ) : (
+                        <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      )}
+                    </button>
+
                     {/* Admin action buttons */}
                     {isAdmin && (
                       <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -211,8 +248,32 @@ export default function PosterPage() {
                       {poster.title}
                     </h3>
                     {poster.description && (
-                      <p className="text-cream/40 text-xs leading-relaxed line-clamp-2">{poster.description}</p>
+                      <p className="text-cream/40 text-xs leading-relaxed line-clamp-2 mb-2">{poster.description}</p>
                     )}
+                    <button
+                      onClick={() => downloadPoster(poster)}
+                      disabled={downloading === poster.id}
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
+                      style={{
+                        background: 'rgba(212,175,55,0.08)',
+                        border: '1px solid rgba(212,175,55,0.2)',
+                        color: '#D4AF37',
+                      }}
+                    >
+                      {downloading === poster.id ? (
+                        <>
+                          <div className="w-3 h-3 border border-gold/30 border-t-gold rounded-full animate-spin" />
+                          กำลังดาวน์โหลด...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          ดาวน์โหลด
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </RevealCard>
