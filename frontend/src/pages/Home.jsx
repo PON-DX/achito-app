@@ -171,25 +171,6 @@ export default function Home() {
 
       <div className="gold-divider-flow" />
 
-      {/* ══════════════════════════════════════════
-          STATS BAR
-          ══════════════════════════════════════════ */}
-      <section className="glass-nav border-b border-gold/10">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="grid grid-cols-3 divide-x divide-gold/10">
-            {[
-              { value: '15+',  label: 'ปีประสบการณ์' },
-              { value: '500+', label: 'ชิ้นคัดสรรแท้' },
-              { value: '100%', label: 'รับประกันของแท้' },
-            ].map(s => (
-              <div key={s.label} className="stat-block">
-                <div className="stat-value animate-count-glow">{s.value}</div>
-                <div className="stat-label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════════════════════════════
           STORY / SCROLLYTELLING SECTION
