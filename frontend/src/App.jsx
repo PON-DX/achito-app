@@ -17,6 +17,7 @@ import OrderTracking from './pages/OrderTracking';
 import MyOrders from './pages/MyOrders';
 import ProfilePon from './pages/ProfilePon';
 import ProfileSor from './pages/ProfileSor';
+import ProfileMew from './pages/ProfileMew';
 import Chat from './pages/Chat';
 import AdminChat from './pages/AdminChat';
 import HistoryAchito from './pages/HistoryAchito';
@@ -64,6 +65,7 @@ export default function App() {
                   <Route path="/my-orders" element={<MyOrders />} />
                   <Route path="/profile/pon" element={<ProfilePon />} />
                   <Route path="/profile/sor" element={<ProfileSor />} />
+                  <Route path="/profile/mew" element={<ProfileMew />} />
                   <Route path="/history/achito" element={<HistoryAchito />} />
                   <Route path="/check-amulet" element={<CheckAmulet />} />
                   <Route path="/catalog" element={<AmuletCatalog />} />

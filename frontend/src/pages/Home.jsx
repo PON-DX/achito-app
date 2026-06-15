@@ -8,6 +8,7 @@ import useScrollReveal from '../hooks/useScrollReveal';
 import { useLang } from '../contexts/LanguageContext';
 import ponLogo from '../assets/images/pon.png';
 import sorLogo from '../assets/images/sor.png';
+import mewLogo from '../assets/images/mew.png';
 
 const REVEAL_STYLE = (visible, delay = 0, dir = 'up') => {
   const from = dir === 'left' ? 'translateX(-28px)' : dir === 'right' ? 'translateX(28px)' : 'translateY(28px)';
@@ -136,6 +137,7 @@ export default function Home() {
               {[
                 { to: '/profile/pon', src: ponLogo, alt: 'Pon' },
                 { to: '/profile/sor', src: sorLogo, alt: 'Sor' },
+                { to: '/profile/mew', src: mewLogo, alt: 'Mew' },
               ].map(({ to, src, alt }) => (
                 <Link key={to} to={to} className="group block relative">
                   {/* Glow ring on hover */}
