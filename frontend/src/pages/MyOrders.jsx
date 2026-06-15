@@ -116,15 +116,6 @@ export default function MyOrders() {
                   <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLOR[order.status] || ''}`}>
                     {t(`status.${order.status}`)}
                   </span>
-                  {order.tracking_number && (
-                    <Link
-                      to={`/track?q=${order.tracking_number}`}
-                      onClick={e => e.stopPropagation()}
-                      className="text-gold text-xs hover:underline"
-                    >
-                      {t('orders.track')}
-                    </Link>
-                  )}
                   {order.status === 'pending' && (
                     <button
                       onClick={e => { e.stopPropagation(); setConfirmCancel(order.id); }}
@@ -167,9 +158,6 @@ export default function MyOrders() {
                       <p className="text-cream font-medium">{order.tracking_number}</p>
                     </div>
                   )}
-                  <Link to={`/track?q=${order.id}`} className="btn-outline-gold text-xs py-1.5 px-4 inline-block">
-                    {t('orders.track')} →
-                  </Link>
                 </div>
               )}
             </div>

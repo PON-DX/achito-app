@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider, useLang } from './contexts/LanguageContext';
 import { CartProvider } from './contexts/CartContext';
@@ -13,7 +13,6 @@ import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
-import OrderTracking from './pages/OrderTracking';
 import MyOrders from './pages/MyOrders';
 import ProfilePon from './pages/ProfilePon';
 import ProfileSor from './pages/ProfileSor';
@@ -39,11 +38,6 @@ function Footer() {
   );
 }
 
-function TrackingPage() {
-  const [params] = useSearchParams();
-  return <OrderTracking initialQuery={params.get('q') || ''} />;
-}
-
 export default function App() {
   return (
     <LanguageProvider>
@@ -59,7 +53,6 @@ export default function App() {
                   <Route path="/amulet/:id" element={<AmuletDetail />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
-                  <Route path="/track" element={<TrackingPage />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/my-orders" element={<MyOrders />} />
