@@ -47,11 +47,16 @@ async function deleteCloudinaryImages(urls) {
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
-    const { search, category, status } = req.query;
+    const { search, category, status, seller } = req.query;
     let sql = 'SELECT * FROM amulets WHERE 1=1';
     const params = [];
     let idx = 1;
 
+    if (seller) {
+      sql += ` AND seller_username = $${idx}`;
+      params.push(seller);
+      idx++;
+    }
     if (search) {
       sql += ` AND (name ILIKE $${idx} OR temple ILIKE $${idx + 1} OR description ILIKE $${idx + 2})`;
       const term = `%${search}%`;

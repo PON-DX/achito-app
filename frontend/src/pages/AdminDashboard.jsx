@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useLang } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const CATEGORIES = ['Powder', 'Metal', 'Statues', 'Monk', 'Talisman', 'Frame', 'Case', 'Necklace', 'Accessory'];
 const EMPTY_FORM = { name: '', category: 'Powder', temple: '', batch_version: '', year: '', price: '', status: 'available', description: '', stock: '' };
@@ -444,6 +445,7 @@ function IconBtn({ onClick, title, icon, color = '#D4AF37', hoverBg = 'rgba(212,
 ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const { t } = useLang();
+  const { user } = useAuth();
   const [tab, setTab]         = useState('products');
   const [amulets, setAmulets] = useState([]);
   const [users, setUsers]     = useState([]);
@@ -460,13 +462,18 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [p, u, o] = await Promise.all([axios.get('/api/products'), axios.get('/api/users'), axios.get('/api/orders')]);
+      const sellerParam = user?.username ? `?seller=${encodeURIComponent(user.username)}` : '';
+      const [p, u, o] = await Promise.all([
+        axios.get(`/api/products${sellerParam}`),
+        axios.get('/api/users'),
+        axios.get('/api/orders'),
+      ]);
       setAmulets(p.data); setUsers(u.data); setOrders(o.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { if (user !== undefined) fetchAll(); }, [user]);
 
   const handleDeleteAmulet = async () => {
     if (!deleteTarget) return; setDeleting(true);
@@ -497,7 +504,7 @@ export default function AdminDashboard() {
   ];
 
   const STATS = [
-    { label: 'สินค้าทั้งหมด', value: amulets.length,                                       icon: <IcBox />,   color: '#D4AF37', glow: 'rgba(212,175,55,0.25)', grad: 'linear-gradient(135deg,rgba(212,175,55,0.18),rgba(212,175,55,0.04))', line: 'linear-gradient(90deg,#D4AF37,#a07818)' },
+    { label: 'สินค้าของฉัน', value: amulets.length,                                       icon: <IcBox />,   color: '#D4AF37', glow: 'rgba(212,175,55,0.25)', grad: 'linear-gradient(135deg,rgba(212,175,55,0.18),rgba(212,175,55,0.04))', line: 'linear-gradient(90deg,#D4AF37,#a07818)' },
     { label: 'พร้อมขาย',       value: amulets.filter(a => a.status === 'available').length, icon: <IcCheck />, color: '#34d399', glow: 'rgba(52,211,153,0.2)',   grad: 'linear-gradient(135deg,rgba(52,211,153,0.14),rgba(52,211,153,0.03))', line: 'linear-gradient(90deg,#34d399,#059669)' },
     { label: 'คำสั่งซื้อ',     value: orders.length,                                        icon: <IcOrder />, color: '#60a5fa', glow: 'rgba(96,165,250,0.2)',   grad: 'linear-gradient(135deg,rgba(96,165,250,0.14),rgba(96,165,250,0.03))', line: 'linear-gradient(90deg,#60a5fa,#2563eb)' },
     { label: 'สมาชิกทั้งหมด', value: users.length,                                          icon: <IcUsers />, color: '#a78bfa', glow: 'rgba(167,139,250,0.2)',  grad: 'linear-gradient(135deg,rgba(167,139,250,0.14),rgba(167,139,250,0.03))', line: 'linear-gradient(90deg,#a78bfa,#7c3aed)' },
