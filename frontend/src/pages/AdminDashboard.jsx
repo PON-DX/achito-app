@@ -392,7 +392,7 @@ function IconBtn({ onClick, title, icon, color = '#D4AF37', hoverBg = 'rgba(212,
 ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const { t } = useLang();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [tab, setTab]         = useState('products');
   const [amulets, setAmulets] = useState([]);
   const [users, setUsers]     = useState([]);
@@ -405,20 +405,24 @@ export default function AdminDashboard() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3200); };
 
-  const fetchAll = async () => {
+  const fetchAll = async (currentUser = user, currentToken = token) => {
+    if (!currentUser || !currentToken) return;
     setLoading(true);
     try {
-      const sellerParam = user?.username ? `?seller=${encodeURIComponent(user.username)}` : '';
+      const headers = { Authorization: `Bearer ${currentToken}` };
+      const sellerParam = `?seller=${encodeURIComponent(currentUser.username)}`;
       const [p, u] = await Promise.all([
-        axios.get(`/api/products${sellerParam}`),
-        axios.get('/api/users'),
+        axios.get(`/api/products${sellerParam}`, { headers }),
+        axios.get('/api/users', { headers }),
       ]);
       setAmulets(p.data); setUsers(u.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { if (user !== undefined) fetchAll(); }, [user]);
+  useEffect(() => {
+    if (user && token) fetchAll(user, token);
+  }, [user, token]);
 
   const handleDeleteAmulet = async () => {
     if (!deleteTarget) return; setDeleting(true);
