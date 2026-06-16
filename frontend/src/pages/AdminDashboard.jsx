@@ -10,7 +10,6 @@ const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 /* ── icons ── */
 const IcBox   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>;
 const IcCheck = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>;
-const IcOrder = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>;
 const IcUsers = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>;
 const IcEdit  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>;
 const IcTrash = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>;
@@ -18,13 +17,6 @@ const IcPlus  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const IcSearch= () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
 const IcUpload= () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:'100%',height:'100%'}}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>;
 
-const ORDER_STATUS = {
-  pending:   { bg:'rgba(251,191,36,0.12)',  border:'rgba(251,191,36,0.4)',  text:'#fbbf24', label:'รอดำเนินการ' },
-  confirmed: { bg:'rgba(96,165,250,0.12)',  border:'rgba(96,165,250,0.4)', text:'#60a5fa', label:'ยืนยันแล้ว' },
-  shipped:   { bg:'rgba(167,139,250,0.12)', border:'rgba(167,139,250,0.4)',text:'#a78bfa', label:'จัดส่งแล้ว' },
-  delivered: { bg:'rgba(52,211,153,0.12)',  border:'rgba(52,211,153,0.4)', text:'#34d399', label:'ส่งถึงแล้ว' },
-  cancelled: { bg:'rgba(248,113,113,0.12)', border:'rgba(248,113,113,0.4)',text:'#f87171', label:'ยกเลิก' },
-};
 
 /* ── shared input ── */
 function DarkInput({ label, as: Tag = 'input', type = 'text', className = '', children, ...p }) {
@@ -353,51 +345,6 @@ function AddAdminModal({ onClose, onSaved, t }) {
 }
 
 /* ── Order Modal ── */
-function OrderModal({ order, onClose, onSaved, t }) {
-  const [form, setForm] = useState({ status: order.status, tracking_number: order.tracking_number || '' });
-  const [saving, setSaving] = useState(false);
-  const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
-
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true);
-    try { await axios.put(`/api/orders/${order.id}`, form); onSaved(); }
-    catch { /* ignore */ }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-sm rounded-2xl"
-        style={{ background: 'linear-gradient(180deg,#100d05,#0a0802)', border: '1px solid rgba(212,175,55,0.22)', boxShadow: '0 48px 120px rgba(0,0,0,0.9)' }}>
-        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
-          <div>
-            <p style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', marginBottom: 2 }}>คำสั่งซื้อ #{order.id}</p>
-            <h2 className="font-serif" style={{ fontSize: 18, color: '#f5f0e8' }}>{t('admin.update_status')}</h2>
-          </div>
-          <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div>
-            <p style={{ fontSize: 10, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)', marginBottom: 6 }}>สถานะ</p>
-            <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 10, color: '#f5f0e8', fontSize: 13, padding: '10px 14px', outline: 'none' }}>
-              {STATUSES.map(s => <option key={s} value={s} style={{ background: '#100d05' }}>{t(`status.${s}`)}</option>)}
-            </select>
-          </div>
-          <DarkInput label={t('admin.tracking_label')} value={form.tracking_number} onChange={e => setForm(p => ({ ...p, tracking_number: e.target.value }))} placeholder="EF123456789TH" />
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer' }}>ยกเลิก</button>
-            <button type="submit" disabled={saving} style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'linear-gradient(135deg,#D4AF37,#B8941F)', color: '#06030c', fontSize: 13, fontWeight: 700, cursor: 'pointer', border: 'none' }}>
-              {saving ? '...' : t('common.save')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 /* ── Delete Confirm ── */
 function DeleteConfirm({ target, onClose, onConfirm, deleting, t }) {
@@ -449,7 +396,6 @@ export default function AdminDashboard() {
   const [tab, setTab]         = useState('products');
   const [amulets, setAmulets] = useState([]);
   const [users, setUsers]     = useState([]);
-  const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -463,12 +409,11 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const sellerParam = user?.username ? `?seller=${encodeURIComponent(user.username)}` : '';
-      const [p, u, o] = await Promise.all([
+      const [p, u] = await Promise.all([
         axios.get(`/api/products${sellerParam}`),
         axios.get('/api/users'),
-        axios.get('/api/orders'),
       ]);
-      setAmulets(p.data); setUsers(u.data); setOrders(o.data);
+      setAmulets(p.data); setUsers(u.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
@@ -494,19 +439,16 @@ export default function AdminDashboard() {
 
   const s = search.toLowerCase();
   const filteredAmulets = amulets.filter(a => a.name.toLowerCase().includes(s) || (a.temple || '').toLowerCase().includes(s));
-  const filteredOrders  = orders.filter(o => String(o.id).includes(s) || (o.username || '').toLowerCase().includes(s) || (o.full_name || '').toLowerCase().includes(s));
   const filteredUsers   = users.filter(u => u.username.toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s));
 
   const NAV_ITEMS = [
-    { key: 'products', label: 'สินค้า',     icon: <IcBox />,   count: amulets.length },
-    { key: 'orders',   label: 'คำสั่งซื้อ', icon: <IcOrder />, count: orders.length },
-    { key: 'users',    label: 'ผู้ใช้',      icon: <IcUsers />, count: users.length },
+    { key: 'products', label: 'สินค้า', icon: <IcBox />,   count: amulets.length },
+    { key: 'users',    label: 'ผู้ใช้',  icon: <IcUsers />, count: users.length },
   ];
 
   const STATS = [
     { label: 'สินค้าของฉัน', value: amulets.length,                                       icon: <IcBox />,   color: '#D4AF37', glow: 'rgba(212,175,55,0.25)', grad: 'linear-gradient(135deg,rgba(212,175,55,0.18),rgba(212,175,55,0.04))', line: 'linear-gradient(90deg,#D4AF37,#a07818)' },
     { label: 'พร้อมขาย',       value: amulets.filter(a => a.status === 'available').length, icon: <IcCheck />, color: '#34d399', glow: 'rgba(52,211,153,0.2)',   grad: 'linear-gradient(135deg,rgba(52,211,153,0.14),rgba(52,211,153,0.03))', line: 'linear-gradient(90deg,#34d399,#059669)' },
-    { label: 'คำสั่งซื้อ',     value: orders.length,                                        icon: <IcOrder />, color: '#60a5fa', glow: 'rgba(96,165,250,0.2)',   grad: 'linear-gradient(135deg,rgba(96,165,250,0.14),rgba(96,165,250,0.03))', line: 'linear-gradient(90deg,#60a5fa,#2563eb)' },
     { label: 'สมาชิกทั้งหมด', value: users.length,                                          icon: <IcUsers />, color: '#a78bfa', glow: 'rgba(167,139,250,0.2)',  grad: 'linear-gradient(135deg,rgba(167,139,250,0.14),rgba(167,139,250,0.03))', line: 'linear-gradient(90deg,#a78bfa,#7c3aed)' },
   ];
 
@@ -754,58 +696,6 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                {/* ────────── Orders ────────── */}
-                {tab === 'orders' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {filteredOrders.length === 0
-                      ? <p style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>{t('common.no_data')}</p>
-                      : filteredOrders.map(o => {
-                          const st = ORDER_STATUS[o.status] || ORDER_STATUS.pending;
-                          return (
-                            <div key={o.id} style={{ borderRadius: 16, border: '1px solid rgba(212,175,55,0.12)', background: 'linear-gradient(135deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', padding: '0', overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.4)' }}>
-                              {/* colored left bar */}
-                              <div style={{ display: 'flex', gap: 0 }}>
-                                <div style={{ width: 4, background: `linear-gradient(180deg,${st.text},${st.text}66)`, flexShrink: 0 }} />
-                                <div style={{ flex: 1, padding: '16px 20px' }}>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 28px', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div>
-                                      <p style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.4)', marginBottom: 2 }}>คำสั่งซื้อ</p>
-                                      <p className="font-serif" style={{ fontSize: 26, color: '#D4AF37', lineHeight: 1 }}>#{o.id}</p>
-                                    </div>
-                                    <div>
-                                      <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>ลูกค้า</p>
-                                      <p style={{ color: '#f5f0e8', fontSize: 13, fontWeight: 500 }}>{o.full_name || '—'}</p>
-                                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>@{o.username}</p>
-                                    </div>
-                                    <div>
-                                      <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>วันที่</p>
-                                      <p style={{ color: '#e2d9c8', fontSize: 13 }}>{new Date(o.created_at).toLocaleDateString('th-TH')}</p>
-                                    </div>
-                                    <div>
-                                      <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>ยอดรวม</p>
-                                      <p style={{ color: '#D4AF37', fontSize: 18, fontWeight: 800 }}>฿{Number(o.total_price).toLocaleString()}</p>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, padding: '5px 13px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, color: st.text, whiteSpace: 'nowrap', boxShadow: `0 0 12px ${st.text}18` }}>
-                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.text }} />
-                                        {st.label}
-                                      </span>
-                                      {o.tracking_number && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{o.tracking_number}</span>}
-                                      <button onClick={() => setModal({ type: 'order', data: o })}
-                                        style={{ padding: '6px 15px', borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: 'pointer', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', whiteSpace: 'nowrap', transition: 'all .2s' }}>
-                                        อัปเดต
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
-                    }
-                  </div>
-                )}
-
                 {/* ────────── Users ────────── */}
                 {tab === 'users' && (
                   <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(212,175,55,0.12)', background: 'rgba(12,9,3,0.7)' }}>
@@ -871,7 +761,6 @@ export default function AdminDashboard() {
         {modal === 'add'         && <AmuletModal onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('เพิ่มสินค้าแล้ว!'); }} t={t} />}
         {modal?.type === 'edit'  && <AmuletModal item={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('อัปเดตสินค้าแล้ว!'); }} t={t} />}
         {modal === 'add-admin'   && <AddAdminModal onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('สร้าง Admin แล้ว!'); }} t={t} />}
-        {modal?.type === 'order' && <OrderModal order={modal.data} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchAll(); showToast('อัปเดตคำสั่งซื้อแล้ว!'); }} t={t} />}
         {deleteTarget && <DeleteConfirm target={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteAmulet} deleting={deleting} t={t} />}
 
         {/* ══ TOAST ════════════════════════════════════════════ */}
