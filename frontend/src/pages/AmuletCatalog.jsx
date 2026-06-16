@@ -27,7 +27,7 @@ const CARD_STYLE = {
   boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
 };
 
-function GroupSection({ group, items, isAdmin, onAdd, onEdit, onDelete }) {
+function GroupSection({ group, items, isAdmin, onAdd, onEdit, onDelete, onImageClick }) {
   const [ref, visible] = useScrollReveal({ threshold: 0.05 });
   const meta = GROUP_META[group] || { icon: '✦', desc: '' };
 
@@ -83,13 +83,16 @@ function GroupSection({ group, items, isAdmin, onAdd, onEdit, onDelete }) {
           {items.map((item, idx) => (
             <div
               key={item.id}
-              className="rounded-xl overflow-hidden group cursor-default transition-all duration-300 hover:scale-[1.03]"
+              className="rounded-xl overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-[1.03]"
               style={{
                 ...CARD_STYLE,
                 transitionDelay: `${idx * 0.04}s`,
               }}
             >
-              <div className="relative aspect-square overflow-hidden bg-[#0d0a04]">
+              <div
+                className="relative aspect-square overflow-hidden bg-[#0d0a04]"
+                onClick={() => onImageClick(item)}
+              >
                 <img
                   src={item.image_url || PLACEHOLDER}
                   alt={item.name}
@@ -97,11 +100,17 @@ function GroupSection({ group, items, isAdmin, onAdd, onEdit, onDelete }) {
                   onError={e => { e.target.src = PLACEHOLDER; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+                {/* Hover hint */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <div className="px-3 py-1 rounded-full text-xs text-gold border border-gold/40" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
+                    ดูรูปขยาย
+                  </div>
+                </div>
                 {/* Admin controls — appear on hover */}
                 {isAdmin && (
                   <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <button
-                      onClick={() => onEdit(item)}
+                      onClick={e => { e.stopPropagation(); onEdit(item); }}
                       className="w-6 h-6 rounded flex items-center justify-center transition-colors hover:scale-110"
                       style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37' }}
                       title="แก้ไข"
@@ -111,7 +120,7 @@ function GroupSection({ group, items, isAdmin, onAdd, onEdit, onDelete }) {
                       </svg>
                     </button>
                     <button
-                      onClick={() => onDelete(item)}
+                      onClick={e => { e.stopPropagation(); onDelete(item); }}
                       className="w-6 h-6 rounded flex items-center justify-center transition-colors hover:scale-110"
                       style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}
                       title="ลบ"
@@ -145,6 +154,7 @@ export default function AmuletCatalog() {
   const [catalog, setCatalog] = useState({});
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
+  const [lightbox, setLightbox] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -160,6 +170,13 @@ export default function AmuletCatalog() {
   };
 
   useEffect(() => { fetchCatalog(); }, []);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
 
   const openAdd = (group) => {
     setForm({ ...EMPTY_FORM, group_name: group });
@@ -259,11 +276,64 @@ export default function AmuletCatalog() {
                 onAdd={openAdd}
                 onEdit={openEdit}
                 onDelete={handleDelete}
+                onImageClick={setLightbox}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(14px)' }}
+          onClick={() => setLightbox(null)}
+        >
+          {/* Close button */}
+          <button
+            onClick={e => { e.stopPropagation(); setLightbox(null); }}
+            className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full text-2xl transition-all hover:scale-110"
+            style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37' }}
+          >×</button>
+
+          {/* Content — stopPropagation so clicking image/name doesn't close */}
+          <div
+            className="flex flex-col items-center gap-5 px-6 max-w-[92vw]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Gold corner frame */}
+            <div className="relative">
+              <img
+                src={lightbox.image_url || PLACEHOLDER}
+                alt={lightbox.name}
+                className="max-w-[82vw] max-h-[65vh] rounded-2xl object-contain"
+                style={{
+                  boxShadow: '0 12px 80px rgba(212,175,55,0.18), 0 0 0 1px rgba(212,175,55,0.2)',
+                }}
+                onError={e => { e.target.src = PLACEHOLDER; }}
+              />
+              {/* Corner accents */}
+              <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-gold/40 rounded-tl-lg pointer-events-none" />
+              <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-gold/40 rounded-tr-lg pointer-events-none" />
+              <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-gold/40 rounded-bl-lg pointer-events-none" />
+              <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-gold/40 rounded-br-lg pointer-events-none" />
+            </div>
+
+            {/* Name & description */}
+            <div className="text-center">
+              <div className="gold-divider-flow max-w-[80px] mx-auto mb-3" />
+              <p className="font-serif text-xl md:text-2xl gold-shimmer">{lightbox.name}</p>
+              {lightbox.description && (
+                <p className="text-cream/50 text-sm mt-1.5 max-w-xs leading-relaxed">{lightbox.description}</p>
+              )}
+              <div className="flex items-center justify-center gap-3 mt-3 text-gold/25 tracking-[0.8em] text-sm select-none">
+                <span>✦</span><span>☸</span><span>✦</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       {modal && (
