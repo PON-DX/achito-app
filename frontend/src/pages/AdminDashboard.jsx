@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { useLang } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -394,9 +395,11 @@ export default function AdminDashboard() {
   const { t } = useLang();
   const { user, token } = useAuth();
   const [tab, setTab]         = useState('products');
-  const [amulets, setAmulets] = useState([]);
-  const [users, setUsers]     = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [amulets, setAmulets]       = useState([]);
+  const [users, setUsers]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [sales, setSales]           = useState({ sold_count: 0, total_value: 0 });
   const [modal, setModal]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting]         = useState(false);
@@ -410,12 +413,13 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${currentToken}` };
-      const sellerParam = `?seller=${encodeURIComponent(currentUser.username)}`;
-      const [p, u] = await Promise.all([
-        axios.get(`/api/products${sellerParam}`, { headers }),
+      const seller  = encodeURIComponent(currentUser.username);
+      const [p, u, s] = await Promise.all([
+        axios.get(`/api/products?seller=${seller}`, { headers }),
         axios.get('/api/users', { headers }),
+        axios.get(`/api/products/sales-summary?seller=${seller}`, { headers }),
       ]);
-      setAmulets(p.data); setUsers(u.data);
+      setAmulets(p.data); setUsers(u.data); setSales(s.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
@@ -423,6 +427,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user && token) fetchAll(user, token);
   }, [user, token]);
+
+  useEffect(() => {
+    const socket = io({ transports: ['websocket', 'polling'] });
+    socket.on('online_count', count => setOnlineCount(count));
+    return () => socket.disconnect();
+  }, []);
 
   const handleDeleteAmulet = async () => {
     if (!deleteTarget) return; setDeleting(true);
@@ -462,6 +472,7 @@ export default function AdminDashboard() {
     <>
       <style>{`
         @keyframes spin2 { to { transform: rotate(360deg); } }
+        @keyframes pulse-ring { 0% { transform: scale(.8); opacity: .8; } 100% { transform: scale(2.2); opacity: 0; } }
         .adm-row:hover { background: rgba(212,175,55,0.05) !important; }
         .adm-row:hover td:first-child { border-left: 2px solid rgba(212,175,55,0.6) !important; }
         .adm-sidebar-item:hover { background: rgba(255,255,255,0.04) !important; color: rgba(255,255,255,0.7) !important; }
@@ -580,26 +591,56 @@ export default function AdminDashboard() {
           <div style={{ padding: '24px 28px 48px' }}>
 
             {/* ── STATS ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 28 }}
-              className="grid-cols-2 lg:grid-cols-4">
+            <div style={{ display: 'grid', gap: 16, marginBottom: 28, gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))' }}>
               {STATS.map(s => (
-                <div key={s.label} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', padding: '20px 20px 18px', background: 'linear-gradient(145deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', border: '1px solid rgba(212,175,55,0.12)', boxShadow: `0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)` }}>
-                  {/* top accent line */}
+                <div key={s.label} style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', padding: '20px 20px 18px', background: 'linear-gradient(145deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', border: '1px solid rgba(212,175,55,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: s.line, borderRadius: '16px 16px 0 0' }} />
-                  {/* bg glow */}
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: s.color, opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
-
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-                    {/* icon box */}
-                    <div style={{ width: 42, height: 42, borderRadius: 12, background: s.grad, border: `1px solid ${s.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, padding: 10 }}>
-                      {s.icon}
-                    </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: s.grad, border: `1px solid ${s.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, padding: 10 }}>{s.icon}</div>
                   </div>
-
                   <p style={{ fontSize: 42, fontWeight: 800, color: s.color, lineHeight: 1, marginBottom: 6, textShadow: `0 0 40px ${s.glow}` }}>{s.value}</p>
                   <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.04em' }}>{s.label}</p>
                 </div>
               ))}
+
+              {/* ── Online Users card ── */}
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', padding: '20px 20px 18px', background: 'linear-gradient(145deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', border: '1px solid rgba(212,175,55,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,#34d399,#059669)', borderRadius: '16px 16px 0 0' }} />
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: '#34d399', opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,rgba(52,211,153,0.14),rgba(52,211,153,0.03))', border: '1px solid rgba(52,211,153,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', padding: 10 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{ width: '100%', height: '100%' }}><circle cx="12" cy="8" r="4"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  </div>
+                  {/* live pulse indicator */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#34d399', opacity: 0.6, animation: 'pulse-ring 1.4s cubic-bezier(0,0,0.2,1) infinite' }} />
+                      <span style={{ position: 'relative', borderRadius: '50%', width: 8, height: 8, background: '#34d399' }} />
+                    </span>
+                    <span style={{ fontSize: 9, color: '#34d399', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>LIVE</span>
+                  </div>
+                </div>
+                <p style={{ fontSize: 42, fontWeight: 800, color: '#34d399', lineHeight: 1, marginBottom: 6, textShadow: '0 0 40px rgba(52,211,153,0.3)' }}>{onlineCount}</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.04em' }}>ผู้ใช้งานขณะนี้</p>
+              </div>
+
+              {/* ── Sales Summary card ── */}
+              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', padding: '20px 20px 18px', background: 'linear-gradient(145deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', border: '1px solid rgba(212,175,55,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,#f59e0b,#d97706)', borderRadius: '16px 16px 0 0' }} />
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: '#f59e0b', opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,rgba(245,158,11,0.16),rgba(245,158,11,0.04))', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', padding: 10 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{ width: '100%', height: '100%' }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                  <p style={{ fontSize: 36, fontWeight: 800, color: '#f59e0b', lineHeight: 1, textShadow: '0 0 40px rgba(245,158,11,0.3)' }}>{sales.sold_count}</p>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>ชิ้น</span>
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#D4AF37', marginBottom: 4 }}>฿{Number(sales.total_value).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.04em' }}>ยอดขายของฉัน</p>
+              </div>
             </div>
 
             {loading ? (

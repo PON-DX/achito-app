@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http    = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const { initializeSchema } = require('./db/database');
 
@@ -14,8 +16,10 @@ const historyRoutes = require('./routes/history');
 const catalogRoutes = require('./routes/catalog');
 const posterRoutes  = require('./routes/posters');
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+const app    = express();
+const server = http.createServer(app);
+const io     = new Server(server, { cors: { origin: '*' } });
+const PORT   = process.env.PORT || 5000;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
@@ -39,9 +43,22 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal server error.' });
 });
 
+// ── Socket.IO: track online users ──────────────────────────
+const onlineSockets = new Set();
+
+io.on('connection', (socket) => {
+  onlineSockets.add(socket.id);
+  io.emit('online_count', onlineSockets.size);
+
+  socket.on('disconnect', () => {
+    onlineSockets.delete(socket.id);
+    io.emit('online_count', onlineSockets.size);
+  });
+});
+
 initializeSchema()
   .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`\n🏮 Achito API running on http://localhost:${PORT}\n`);
     });
   })

@@ -82,6 +82,22 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/products/sales-summary?seller=username
+router.get('/sales-summary', async (req, res) => {
+  try {
+    const { seller } = req.query;
+    if (!seller) return res.json({ sold_count: 0, total_value: 0 });
+    const { rows: [row] } = await query(
+      `SELECT COUNT(*)::int AS sold_count, COALESCE(SUM(price), 0)::numeric AS total_value
+       FROM amulets WHERE seller_username = $1 AND status = 'sold_out'`,
+      [seller]
+    );
+    res.json(row);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/products/:id
 router.get('/:id', async (req, res) => {
   try {
