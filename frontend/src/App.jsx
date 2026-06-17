@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider, useLang } from './contexts/LanguageContext';
 import { CartProvider } from './contexts/CartContext';
 import { ChatNotifProvider } from './contexts/ChatNotifContext';
+import { SocketProvider } from './contexts/SocketContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -40,6 +41,7 @@ function Footer() {
 
 export default function App() {
   return (
+    <SocketProvider>
     <LanguageProvider>
       <AuthProvider>
         <CartProvider>
@@ -75,5 +77,6 @@ export default function App() {
         </CartProvider>
       </AuthProvider>
     </LanguageProvider>
+    </SocketProvider>
   );
 }

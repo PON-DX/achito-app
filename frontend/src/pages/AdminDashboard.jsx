@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
 import { useLang } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
 
 const CATEGORIES = ['Powder', 'Metal', 'Statues', 'Monk', 'Talisman', 'Frame', 'Case', 'Necklace', 'Accessory'];
 const EMPTY_FORM = { name: '', category: 'Powder', temple: '', batch_version: '', year: '', price: '', status: 'available', description: '', stock: '' };
@@ -394,12 +394,12 @@ function IconBtn({ onClick, title, icon, color = '#D4AF37', hoverBg = 'rgba(212,
 export default function AdminDashboard() {
   const { t } = useLang();
   const { user, token } = useAuth();
+  const { onlineCount } = useSocket();
   const [tab, setTab]         = useState('products');
   const [amulets, setAmulets]       = useState([]);
   const [users, setUsers]           = useState([]);
   const [loading, setLoading]       = useState(true);
-  const [onlineCount, setOnlineCount] = useState(0);
-  const [sales, setSales]           = useState({ sold_count: 0, total_value: 0 });
+  const [sales, setSales] = useState({ sold_count: 0, total_value: 0 });
   const [modal, setModal]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting]         = useState(false);
@@ -427,12 +427,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user && token) fetchAll(user, token);
   }, [user, token]);
-
-  useEffect(() => {
-    const socket = io({ transports: ['websocket', 'polling'] });
-    socket.on('online_count', count => setOnlineCount(count));
-    return () => socket.disconnect();
-  }, []);
 
   const handleDeleteAmulet = async () => {
     if (!deleteTarget) return; setDeleting(true);
