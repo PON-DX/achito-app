@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useLang } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
 
 const CATEGORIES = ['Powder', 'Metal', 'Statues', 'Monk', 'Talisman', 'Frame', 'Case', 'Necklace', 'Accessory'];
 const EMPTY_FORM = { name: '', category: 'Powder', temple: '', batch_version: '', year: '', price: '', status: 'available', description: '', stock: '' };
@@ -394,7 +393,6 @@ function IconBtn({ onClick, title, icon, color = '#D4AF37', hoverBg = 'rgba(212,
 export default function AdminDashboard() {
   const { t } = useLang();
   const { user, token } = useAuth();
-  const { onlineCount } = useSocket();
   const [tab, setTab]         = useState('products');
   const [amulets, setAmulets]       = useState([]);
   const [users, setUsers]           = useState([]);
@@ -466,7 +464,6 @@ export default function AdminDashboard() {
     <>
       <style>{`
         @keyframes spin2 { to { transform: rotate(360deg); } }
-        @keyframes pulse-ring { 0% { transform: scale(.8); opacity: .8; } 100% { transform: scale(2.2); opacity: 0; } }
         .adm-row:hover { background: rgba(212,175,55,0.05) !important; }
         .adm-row:hover td:first-child { border-left: 2px solid rgba(212,175,55,0.6) !important; }
         .adm-sidebar-item:hover { background: rgba(255,255,255,0.04) !important; color: rgba(255,255,255,0.7) !important; }
@@ -597,27 +594,6 @@ export default function AdminDashboard() {
                   <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.04em' }}>{s.label}</p>
                 </div>
               ))}
-
-              {/* ── Online Users card ── */}
-              <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', padding: '20px 20px 18px', background: 'linear-gradient(145deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', border: '1px solid rgba(212,175,55,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,#34d399,#059669)', borderRadius: '16px 16px 0 0' }} />
-                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: '#34d399', opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,rgba(52,211,153,0.14),rgba(52,211,153,0.03))', border: '1px solid rgba(52,211,153,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', padding: 10 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} style={{ width: '100%', height: '100%' }}><circle cx="12" cy="8" r="4"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                  </div>
-                  {/* live pulse indicator */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
-                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#34d399', opacity: 0.6, animation: 'pulse-ring 1.4s cubic-bezier(0,0,0.2,1) infinite' }} />
-                      <span style={{ position: 'relative', borderRadius: '50%', width: 8, height: 8, background: '#34d399' }} />
-                    </span>
-                    <span style={{ fontSize: 9, color: '#34d399', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>LIVE</span>
-                  </div>
-                </div>
-                <p style={{ fontSize: 42, fontWeight: 800, color: '#34d399', lineHeight: 1, marginBottom: 6, textShadow: '0 0 40px rgba(52,211,153,0.3)' }}>{onlineCount}</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', letterSpacing: '0.04em' }}>ผู้ใช้งานขณะนี้</p>
-              </div>
 
               {/* ── Sales Summary card ── */}
               <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', padding: '20px 20px 18px', background: 'linear-gradient(145deg,rgba(18,13,4,0.98),rgba(10,7,2,0.99))', border: '1px solid rgba(212,175,55,0.12)', boxShadow: '0 8px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
