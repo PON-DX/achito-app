@@ -233,13 +233,14 @@ async function initializeSchema() {
 
 async function seedAdmin() {
   const username = process.env.ADMIN_USERNAME || 'admin';
-  const { rows } = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+  const { rows } = await pool.query('SELECT id, role FROM users WHERE username = $1', [username]);
   if (rows.length === 0) {
     const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'admin123', 10);
     await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3)', [username, hash, 'admin']);
     console.log(`✅ Admin user seeded: username=${username}`);
-  } else {
-    await pool.query("UPDATE users SET role = 'admin' WHERE username = $1", [username]);
+  } else if (rows[0].role !== 'admin') {
+    // Never silently promote an existing account (e.g. a customer who registered this name)
+    console.warn(`⚠️  ADMIN_USERNAME "${username}" belongs to a non-admin account; not promoting it.`);
   }
 }
 

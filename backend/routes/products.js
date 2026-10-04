@@ -2,11 +2,30 @@ const express = require('express');
 const { createUpload } = require('../upload');
 const cloudinary = require('../cloudinary');
 const { query } = require('../db/database');
-const { authenticateToken } = require('../middleware/auth');
+const { requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 const upload = createUpload('achito-products');
+
+const SELLER_ROLES = ['seller', 'admin'];
+const requireSeller = requireRole(...SELLER_ROLES);
+
+// Loads the product and allows only its seller or an admin. Runs before multer
+// so a forbidden request never uploads anything to Cloudinary.
+async function requireOwnProduct(req, res, next) {
+  try {
+    const { rows: [product] } = await query('SELECT * FROM amulets WHERE id = $1', [req.params.id]);
+    if (!product) return res.status(404).json({ error: 'Amulet not found.' });
+    if (req.user.role !== 'admin' && product.seller_username !== req.user.username) {
+      return res.status(403).json({ error: 'You can only modify your own products.' });
+    }
+    req.product = product;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
 
 async function getAmuletWithImages(id) {
   const { rows: [amulet] } = await query(`
@@ -98,7 +117,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products
-router.post('/', authenticateToken, upload.array('images', 10), async (req, res) => {
+router.post('/', requireSeller, upload.array('images', 10), async (req, res) => {
   try {
     const { name, category, temple, batch_version, year, price, status, description, stock } = req.body;
     if (!name || !category || !price) {
@@ -134,10 +153,9 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
 });
 
 // PUT /api/products/:id
-router.put('/:id', authenticateToken, upload.array('images', 10), async (req, res) => {
+router.put('/:id', requireSeller, requireOwnProduct, upload.array('images', 10), async (req, res) => {
   try {
-    const { rows: [existing] } = await query('SELECT * FROM amulets WHERE id = $1', [req.params.id]);
-    if (!existing) return res.status(404).json({ error: 'Amulet not found.' });
+    const existing = req.product;
 
     const { name, category, temple, batch_version, year, price, status, description, stock } = req.body;
 
@@ -192,10 +210,9 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
 });
 
 // DELETE /api/products/:id
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireSeller, requireOwnProduct, async (req, res) => {
   try {
-    const { rows: [existing] } = await query('SELECT * FROM amulets WHERE id = $1', [req.params.id]);
-    if (!existing) return res.status(404).json({ error: 'Amulet not found.' });
+    const existing = req.product;
 
     const { rows: productImages } = await query('SELECT image_url FROM product_images WHERE product_id = $1', [req.params.id]);
     const urlsToDelete = productImages.map(r => r.image_url);

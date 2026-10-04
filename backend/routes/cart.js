@@ -5,6 +5,10 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 router.use(authenticateToken);
 
+const MAX_QUANTITY = 99;
+const isValidQuantity = (q) => Number.isInteger(q) && q >= 1 && q <= MAX_QUANTITY;
+const QUANTITY_ERROR = `Quantity must be a whole number from 1 to ${MAX_QUANTITY}.`;
+
 // GET /api/cart
 router.get('/', async (req, res) => {
   try {
@@ -25,6 +29,7 @@ router.post('/', async (req, res) => {
   try {
     const { amulet_id, quantity = 1 } = req.body;
     if (!amulet_id) return res.status(400).json({ error: 'amulet_id is required.' });
+    if (!isValidQuantity(quantity)) return res.status(400).json({ error: QUANTITY_ERROR });
 
     const { rows: [amulet] } = await query('SELECT * FROM amulets WHERE id = $1', [amulet_id]);
     if (!amulet) return res.status(404).json({ error: 'Amulet not found.' });
@@ -36,7 +41,7 @@ router.post('/', async (req, res) => {
     );
 
     if (existing) {
-      await query('UPDATE carts SET quantity = quantity + $1 WHERE id = $2', [quantity, existing.id]);
+      await query('UPDATE carts SET quantity = LEAST(quantity + $1, $2) WHERE id = $3', [quantity, MAX_QUANTITY, existing.id]);
     } else {
       await query('INSERT INTO carts (user_id, amulet_id, quantity) VALUES ($1, $2, $3)', [req.user.id, amulet_id, quantity]);
     }
@@ -56,7 +61,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { quantity } = req.body;
-    if (!quantity || quantity < 1) return res.status(400).json({ error: 'Quantity must be at least 1.' });
+    if (!isValidQuantity(quantity)) return res.status(400).json({ error: QUANTITY_ERROR });
 
     const { rows: [item] } = await query(
       'SELECT * FROM carts WHERE id = $1 AND user_id = $2',

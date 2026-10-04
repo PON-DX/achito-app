@@ -88,7 +88,9 @@ router.get('/conversations/:id/messages', async (req, res) => {
 // POST /api/chat/conversations/:id/messages
 router.post('/conversations/:id/messages', async (req, res) => {
   try {
-    const { content, message_type = 'text' } = req.body;
+    // Only plain text from clients; order/check_amulet messages are created server-side
+    const { content } = req.body;
+    const message_type = 'text';
     if (!content || !content.trim()) return res.status(400).json({ error: 'Content is required.' });
 
     const { rows: [conv] } = await query(

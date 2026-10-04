@@ -18,11 +18,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/users — admin creates another admin
+// POST /api/users — admin creates an admin or seller account
 router.post('/', async (req, res) => {
   try {
-    const { username, password, email, first_name, last_name } = req.body;
+    const { username, password, email, first_name, last_name, role = 'admin' } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and password are required.' });
+    if (!['admin', 'seller'].includes(role)) return res.status(400).json({ error: 'role must be admin or seller.' });
 
     const { rows: [existing] } = await query('SELECT id FROM users WHERE username = $1', [username]);
     if (existing) return res.status(409).json({ error: 'Username already taken.' });
@@ -30,7 +31,7 @@ router.post('/', async (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     const { rows: [user] } = await query(
       'INSERT INTO users (username, password, email, first_name, last_name, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, email, first_name, last_name, role, created_at',
-      [username, hash, email || null, first_name || null, last_name || null, 'admin']
+      [username, hash, email || null, first_name || null, last_name || null, role]
     );
     res.status(201).json(user);
   } catch (err) {

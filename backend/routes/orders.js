@@ -128,15 +128,20 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/orders/track/:query — public tracking
-router.get('/track/:query', async (req, res) => {
+// GET /api/orders/track/:query — order owner or admin, by order id or tracking number
+router.get('/track/:query', authenticateToken, async (req, res) => {
   try {
     const q = req.params.query;
+    const orderId = /^\d{1,9}$/.test(q) ? parseInt(q, 10) : null;
     const { rows: [order] } = await query(`
-      SELECT o.id, o.status, o.tracking_number, o.created_at, o.full_name, o.shipping_address, o.total_price
+      SELECT o.id, o.user_id, o.status, o.tracking_number, o.created_at, o.full_name, o.shipping_address, o.total_price
       FROM orders o WHERE o.id = $1 OR o.tracking_number = $2
-    `, [q, q]);
-    if (!order) return res.status(404).json({ error: 'Order not found.' });
+    `, [orderId, q]);
+    // 404 for other people's orders too, so order ids can't be probed
+    if (!order || (req.user.role !== 'admin' && order.user_id !== req.user.id)) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+    delete order.user_id;
 
     const { rows: items } = await query('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
     res.json({ ...order, items });
