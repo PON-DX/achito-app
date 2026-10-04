@@ -7,7 +7,7 @@ export default {
     cart: '购物车', trackOrder: '追踪订单',
     chat: '聊天', chat_with_seller: '与卖家聊天', customer_chat: '客户聊天',
     history: '佛牌历史', check_amulet: '鉴别佛牌',
-    scam_check: '转账前查账户', scam_report: '举报诈骗', scam_mine: '我的举报', scam_admin: '审核举报',
+    scam_check: '转账前查账户', scam_report: '举报诈骗', scam_mine: '我的举报', scam_admin: '审核举报', my_products: '管理我的商品',
   },
   home: {
     hero_title: '神圣法器 圣物珍藏', hero_subtitle: '泰国正宗佛牌',

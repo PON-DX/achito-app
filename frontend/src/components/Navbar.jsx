@@ -8,7 +8,7 @@ const LANG_LABEL = { th: '🇹🇭 ไทย', en: '🇬🇧 EN', zh: '🇨🇳 
 const LANG_NEXT_TEXT = { th: 'Switch to English', en: '切换到中文', zh: 'เปลี่ยนเป็นไทย' };
 
 export default function Navbar() {
-  const { isAdmin, user, logout } = useAuth();
+  const { isAdmin, isSeller, user, logout } = useAuth();
   const { t, lang, toggleLang } = useLang();
   const { unread } = useChatNotif();
   const navigate = useNavigate();
@@ -42,6 +42,7 @@ export default function Navbar() {
             <Link to="/posters" className={`text-sm font-medium transition-colors duration-200 ${isActive('/posters')}`}>โปสเตอร์พระ</Link>
             <Link to="/scam-check" className={`text-sm font-medium transition-colors duration-200 ${isActive('/scam-check')}`}>🛡️ {t('nav.scam_check')}</Link>
             {isAdmin && <Link to="/admin" className={`text-sm font-medium transition-colors duration-200 ${isActive('/admin')}`}>{t('nav.dashboard')}</Link>}
+            {isSeller && <Link to="/admin" className={`text-sm font-medium transition-colors duration-200 ${isActive('/admin')}`}>{t('nav.my_products')}</Link>}
             {isAdmin && <Link to="/admin/scam-reports" className={`text-sm font-medium transition-colors duration-200 ${isActive('/admin/scam-reports')}`}>{t('nav.scam_admin')}</Link>}
 
             {/* Language toggle — cycles th → en → zh */}
@@ -123,6 +124,7 @@ export default function Navbar() {
             <Link to="/posters" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>โปสเตอร์พระ</Link>
             <Link to="/scam-check" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>🛡️ {t('nav.scam_check')}</Link>
             {isAdmin && <Link to="/admin" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.dashboard')}</Link>}
+            {isSeller && <Link to="/admin" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.my_products')}</Link>}
             {isAdmin && <Link to="/admin/scam-reports" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.scam_admin')}</Link>}
             {!isAdmin && <Link to="/scam-reports/new" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.scam_report')}</Link>}
             {user && !isAdmin && <Link to="/scam-reports/mine" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.scam_mine')}</Link>}

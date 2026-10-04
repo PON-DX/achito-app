@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { query } = require('../db/database');
+const { query, getClient } = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -39,20 +39,68 @@ router.post('/', async (req, res) => {
   }
 });
 
-// DELETE /api/users/:id
-router.delete('/:id', async (req, res) => {
+class UserChangeError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+
+// Runs `change(client, user)` in a transaction that locks every admin row first,
+// so two admins demoting/deleting each other at once can't leave zero admins.
+async function changeUserSafely(targetId, change) {
+  const client = await getClient();
   try {
-    if (parseInt(req.params.id) === req.user.id) {
-      return res.status(400).json({ error: 'Cannot delete your own account.' });
-    }
+    await client.query('BEGIN');
+    const { rows: admins } = await client.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id FOR UPDATE");
+    const { rows: [user] } = await client.query('SELECT id, username, role FROM users WHERE id = $1 FOR UPDATE', [targetId]);
+    if (!user) throw new UserChangeError(404, 'User not found.');
+    const isLastAdmin = user.role === 'admin' && admins.length <= 1;
+    const result = await change(client, user, isLastAdmin);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
-    const { rows: [user] } = await query('SELECT * FROM users WHERE id = $1', [req.params.id]);
-    if (!user) return res.status(404).json({ error: 'User not found.' });
+function sendError(res, err) {
+  res.status(err instanceof UserChangeError ? err.status : 500).json({ error: err.message });
+}
 
-    await query('DELETE FROM users WHERE id = $1', [req.params.id]);
+// PATCH /api/users/:id/role — admin changes a user to customer or seller
+router.patch('/:id(\\d+)/role', async (req, res) => {
+  const { role } = req.body;
+  if (!['customer', 'seller'].includes(role)) return res.status(400).json({ error: 'role must be customer or seller.' });
+  if (parseInt(req.params.id, 10) === req.user.id) return res.status(400).json({ error: 'You cannot change your own role.' });
+  try {
+    const user = await changeUserSafely(req.params.id, async (client, user, isLastAdmin) => {
+      if (isLastAdmin) throw new UserChangeError(400, 'Cannot demote the last admin.');
+      const { rows: [updated] } = await client.query(
+        'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, username, email, first_name, last_name, role, created_at',
+        [role, user.id]
+      );
+      return updated;
+    });
+    res.json(user);
+  } catch (err) {
+    sendError(res, err);
+  }
+});
+
+// DELETE /api/users/:id
+router.delete('/:id(\\d+)', async (req, res) => {
+  if (parseInt(req.params.id, 10) === req.user.id) {
+    return res.status(400).json({ error: 'Cannot delete your own account.' });
+  }
+  try {
+    await changeUserSafely(req.params.id, async (client, user, isLastAdmin) => {
+      if (isLastAdmin) throw new UserChangeError(400, 'Cannot delete the last admin.');
+      await client.query('DELETE FROM users WHERE id = $1', [user.id]);
+    });
     res.json({ message: 'User deleted.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendError(res, err);
   }
 });
 

@@ -7,7 +7,7 @@ export default {
     cart: 'Cart', trackOrder: 'Track Order',
     chat: 'Chat', chat_with_seller: 'Chat with Seller', customer_chat: 'Customer Chats',
     history: 'Amulet History', check_amulet: 'Verify Amulet',
-    scam_check: 'Check Account', scam_report: 'Report Scam', scam_mine: 'My Reports', scam_admin: 'Scam Reports',
+    scam_check: 'Check Account', scam_report: 'Report Scam', scam_mine: 'My Reports', scam_admin: 'Scam Reports', my_products: 'My Products',
   },
   home: {
     hero_title: 'Sacred Treasures', hero_subtitle: 'Amulet Collection',

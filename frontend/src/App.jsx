@@ -73,7 +73,7 @@ export default function App() {
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/admin/scam-reports" element={<ProtectedRoute adminOnly><AdminScamReports /></ProtectedRoute>} />
                   <Route path="/admin/chat" element={<ProtectedRoute adminOnly><AdminChat /></ProtectedRoute>} />
-                  <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+                  <Route path="/admin" element={<ProtectedRoute roles={['admin', 'seller']}><AdminDashboard /></ProtectedRoute>} />
                 </Routes>
               </main>
               <Footer />

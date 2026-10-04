@@ -388,11 +388,42 @@ function IconBtn({ onClick, title, icon, color = '#D4AF37', hoverBg = 'rgba(212,
 }
 
 /* ══════════════════════════════════════════════════════════
+   ROLE BADGE / SELECTOR (users tab)
+══════════════════════════════════════════════════════════ */
+const ROLE_STYLE = {
+  admin:    { bg: 'rgba(212,175,55,0.14)', border: 'rgba(212,175,55,0.4)', color: '#D4AF37' },
+  seller:   { bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.35)', color: '#34d399' },
+  customer: { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.4)' },
+};
+
+// Your own role is a badge; anyone else can be set to customer or seller
+// (an admin can be demoted, the server refuses to demote the last admin)
+function RoleControl({ u, self, onChange }) {
+  const st = ROLE_STYLE[u.role] || ROLE_STYLE.customer;
+  const style = { fontSize: 10, fontWeight: 700, padding: '4px 11px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, color: st.color, textTransform: 'uppercase', letterSpacing: '0.05em' };
+  if (self) return <span style={style}>{u.role}</span>;
+  const optStyle = { background: '#1a1408', color: '#f5f0e8' };
+  const handle = (e) => {
+    const role = e.target.value;
+    if (u.role === 'admin' && !window.confirm(`ลดสิทธิ์ ${u.username} จาก admin เป็น ${role}?`)) return;
+    onChange(u.id, role);
+  };
+  return (
+    <select value={u.role} onChange={handle} aria-label={`role of ${u.username}`}
+      style={{ ...style, cursor: 'pointer', outline: 'none' }}>
+      {u.role === 'admin' && <option value="admin" disabled style={optStyle}>admin</option>}
+      <option value="customer" style={optStyle}>customer</option>
+      <option value="seller" style={optStyle}>seller</option>
+    </select>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    MAIN DASHBOARD
 ══════════════════════════════════════════════════════════ */
 export default function AdminDashboard() {
   const { t } = useLang();
-  const { user, token } = useAuth();
+  const { user, token, isAdmin } = useAuth();
   const [tab, setTab]         = useState('products');
   const [amulets, setAmulets]       = useState([]);
   const [users, setUsers]           = useState([]);
@@ -412,10 +443,10 @@ export default function AdminDashboard() {
     try {
       const headers = { Authorization: `Bearer ${currentToken}` };
       const seller  = encodeURIComponent(currentUser.username);
-      const [p, u, s] = await Promise.all([
+      const [p, s, u] = await Promise.all([
         axios.get(`/api/products?seller=${seller}`, { headers }),
-        axios.get('/api/users', { headers }),
         axios.get(`/api/products/sales-summary?seller=${seller}`, { headers }),
+        currentUser.role === 'admin' ? axios.get('/api/users', { headers }) : Promise.resolve({ data: [] }),
       ]);
       setAmulets(p.data); setUsers(u.data); setSales(s.data);
     } catch { /* ignore */ }
@@ -431,6 +462,11 @@ export default function AdminDashboard() {
     try { await axios.delete(`/api/products/${deleteTarget.id}`); setDeleteTarget(null); fetchAll(); showToast('ลบสินค้าแล้ว'); }
     catch { showToast('ลบไม่สำเร็จ'); }
     finally { setDeleting(false); }
+  };
+
+  const handleChangeRole = async (id, role) => {
+    try { await axios.patch(`/api/users/${id}/role`, { role }); fetchAll(); showToast('เปลี่ยน role แล้ว'); }
+    catch (err) { showToast(err.response?.data?.error || 'ไม่สำเร็จ'); }
   };
 
   const handleDeleteUser = async (id) => {
@@ -450,13 +486,13 @@ export default function AdminDashboard() {
   const NAV_ITEMS = [
     { key: 'products', label: 'สินค้า', icon: <IcBox />,   count: amulets.length },
     { key: 'users',    label: 'ผู้ใช้',  icon: <IcUsers />, count: users.length },
-  ];
+  ].filter(n => isAdmin || n.key !== 'users');
 
   const STATS = [
     { label: 'สินค้าของฉัน', value: amulets.length,                                       icon: <IcBox />,   color: '#D4AF37', glow: 'rgba(212,175,55,0.25)', grad: 'linear-gradient(135deg,rgba(212,175,55,0.18),rgba(212,175,55,0.04))', line: 'linear-gradient(90deg,#D4AF37,#a07818)' },
     { label: 'พร้อมขาย',       value: amulets.filter(a => a.status === 'available').length, icon: <IcCheck />, color: '#34d399', glow: 'rgba(52,211,153,0.2)',   grad: 'linear-gradient(135deg,rgba(52,211,153,0.14),rgba(52,211,153,0.03))', line: 'linear-gradient(90deg,#34d399,#059669)' },
-    { label: 'สมาชิกทั้งหมด', value: users.length,                                          icon: <IcUsers />, color: '#a78bfa', glow: 'rgba(167,139,250,0.2)',  grad: 'linear-gradient(135deg,rgba(167,139,250,0.14),rgba(167,139,250,0.03))', line: 'linear-gradient(90deg,#a78bfa,#7c3aed)' },
-  ];
+    isAdmin && { label: 'สมาชิกทั้งหมด', value: users.length,                                          icon: <IcUsers />, color: '#a78bfa', glow: 'rgba(167,139,250,0.2)',  grad: 'linear-gradient(135deg,rgba(167,139,250,0.14),rgba(167,139,250,0.03))', line: 'linear-gradient(90deg,#a78bfa,#7c3aed)' },
+  ].filter(Boolean);
 
   const pageLabel = NAV_ITEMS.find(n => n.key === tab)?.label || '';
 
@@ -485,7 +521,7 @@ export default function AdminDashboard() {
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,rgba(212,175,55,0.25),rgba(212,175,55,0.08))', border: '1px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#D4AF37' }}>☸</div>
               <div>
                 <p className="font-serif" style={{ fontSize: 16, color: '#D4AF37', lineHeight: 1.1 }}>อชิโต</p>
-                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</p>
+                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{isAdmin ? 'Admin Panel' : 'Seller Panel'}</p>
               </div>
             </div>
             <div style={{ height: 1, background: 'linear-gradient(90deg,rgba(212,175,55,0.35),transparent)' }} />
@@ -542,7 +578,7 @@ export default function AdminDashboard() {
             boxShadow: '0 4px 30px rgba(0,0,0,0.5)',
           }}>
             <div>
-              <p style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', marginBottom: 3 }}>Achito Admin · จัดการ{pageLabel}</p>
+              <p style={{ fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', marginBottom: 3 }}>Achito {isAdmin ? 'Admin' : 'Seller'} · จัดการ{pageLabel}</p>
               <h1 className="font-serif" style={{ fontSize: 24, color: '#f5f0e8', lineHeight: 1 }}>{pageLabel}</h1>
             </div>
 
@@ -735,9 +771,7 @@ export default function AdminDashboard() {
                               <td style={{ padding: '13px 18px', color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>{u.email || '—'}</td>
                               <td style={{ padding: '13px 18px', color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>{[u.first_name, u.last_name].filter(Boolean).join(' ') || '—'}</td>
                               <td style={{ padding: '13px 18px' }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: '4px 11px', borderRadius: 999, background: u.role === 'admin' ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)', border: `1px solid ${u.role === 'admin' ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.12)'}`, color: u.role === 'admin' ? '#D4AF37' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                  {u.role}
-                                </span>
+                                <RoleControl u={u} self={u.id === user.id} onChange={handleChangeRole} />
                               </td>
                               <td style={{ padding: '13px 18px', color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>{new Date(u.created_at).toLocaleDateString('th-TH')}</td>
                               <td style={{ padding: '13px 18px' }}>
@@ -757,7 +791,7 @@ export default function AdminDashboard() {
                             <div>
                               <p style={{ color: '#f5f0e8', fontWeight: 500, fontSize: 13 }}>{u.username}</p>
                               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>{u.email || '—'}</p>
-                              <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: u.role === 'admin' ? 'rgba(212,175,55,0.14)' : 'rgba(255,255,255,0.06)', border: `1px solid ${u.role === 'admin' ? 'rgba(212,175,55,0.35)' : 'rgba(255,255,255,0.1)'}`, color: u.role === 'admin' ? '#D4AF37' : 'rgba(255,255,255,0.35)', textTransform: 'uppercase', display: 'inline-block', marginTop: 4 }}>{u.role}</span>
+                              <div style={{ marginTop: 4 }}><RoleControl u={u} self={u.id === user.id} onChange={handleChangeRole} /></div>
                             </div>
                           </div>
                           <button onClick={() => handleDeleteUser(u.id)} style={{ padding: '7px 14px', borderRadius: 9, fontSize: 11, cursor: 'pointer', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', color: '#f87171', whiteSpace: 'nowrap' }}>ลบ</button>

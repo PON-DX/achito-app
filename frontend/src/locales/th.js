@@ -7,7 +7,7 @@ export default {
     cart: 'ตะกร้า', trackOrder: 'ติดตามพัสดุ',
     chat: 'แชท', chat_with_seller: 'แชทกับผู้ขาย', customer_chat: 'แชทลูกค้า',
     history: 'ประวัติพระ', check_amulet: 'เช็คพระ',
-    scam_check: 'เช็กบัญชีก่อนโอน', scam_report: 'แจ้งมิจฉาชีพ', scam_mine: 'รายงานของฉัน', scam_admin: 'ตรวจรายงานมิจฉาชีพ',
+    scam_check: 'เช็กบัญชีก่อนโอน', scam_report: 'แจ้งมิจฉาชีพ', scam_mine: 'รายงานของฉัน', scam_admin: 'ตรวจรายงานมิจฉาชีพ', my_products: 'จัดการสินค้าของฉัน',
   },
   home: {
     hero_title: 'พระเครื่อง วัตถุมงคล', hero_subtitle: 'Thai Amulet',
