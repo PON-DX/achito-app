@@ -16,6 +16,7 @@ const contentRoutes = require('./routes/content');
 const historyRoutes = require('./routes/history');
 const catalogRoutes = require('./routes/catalog');
 const posterRoutes  = require('./routes/posters');
+const scamReportRoutes = require('./routes/scamReports');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.use('/api/content',  contentRoutes);
 app.use('/api/history',  historyRoutes);
 app.use('/api/catalog',  catalogRoutes);
 app.use('/api/posters',  posterRoutes);
+app.use('/api/scam-reports', scamReportRoutes);
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Route not found.' }));
 

@@ -40,7 +40,9 @@ export default function Navbar() {
             <Link to="/history/achito" className={`text-sm font-medium transition-colors duration-200 ${isActive('/history/achito')}`}>{t('nav.history')}</Link>
             <Link to="/catalog" className={`text-sm font-medium transition-colors duration-200 ${isActive('/catalog')}`}>ทำเนียบพิมพ์พระ</Link>
             <Link to="/posters" className={`text-sm font-medium transition-colors duration-200 ${isActive('/posters')}`}>โปสเตอร์พระ</Link>
+            <Link to="/scam-check" className={`text-sm font-medium transition-colors duration-200 ${isActive('/scam-check')}`}>🛡️ {t('nav.scam_check')}</Link>
             {isAdmin && <Link to="/admin" className={`text-sm font-medium transition-colors duration-200 ${isActive('/admin')}`}>{t('nav.dashboard')}</Link>}
+            {isAdmin && <Link to="/admin/scam-reports" className={`text-sm font-medium transition-colors duration-200 ${isActive('/admin/scam-reports')}`}>{t('nav.scam_admin')}</Link>}
 
             {/* Language toggle — cycles th → en → zh */}
             <button
@@ -53,6 +55,9 @@ export default function Navbar() {
 
             {user && !isAdmin && (
               <Link to="/my-orders" className={`text-sm font-medium transition-colors ${isActive('/my-orders')}`}>{t('nav.myOrders')}</Link>
+            )}
+            {!isAdmin && (
+              <Link to="/scam-reports/new" className={`text-sm font-medium transition-colors ${isActive('/scam-reports/new')}`}>{t('nav.scam_report')}</Link>
             )}
             {user && !isAdmin && (
               <Link to="/check-amulet" className={`text-sm font-medium transition-colors flex items-center gap-1 ${isActive('/check-amulet')}`}>
@@ -116,7 +121,11 @@ export default function Navbar() {
             <Link to="/history/achito" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.history')}</Link>
             <Link to="/catalog" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>ทำเนียบพิมพ์พระ</Link>
             <Link to="/posters" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>โปสเตอร์พระ</Link>
+            <Link to="/scam-check" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>🛡️ {t('nav.scam_check')}</Link>
             {isAdmin && <Link to="/admin" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.dashboard')}</Link>}
+            {isAdmin && <Link to="/admin/scam-reports" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.scam_admin')}</Link>}
+            {!isAdmin && <Link to="/scam-reports/new" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.scam_report')}</Link>}
+            {user && !isAdmin && <Link to="/scam-reports/mine" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.scam_mine')}</Link>}
             {user && !isAdmin && <Link to="/my-orders" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>{t('nav.myOrders')}</Link>}
             {user && !isAdmin && <Link to="/check-amulet" className="block text-cream-dark hover:text-gold py-1" onClick={() => setMenuOpen(false)}>🔍 {t('nav.check_amulet')}</Link>}
             {user && !isAdmin && (

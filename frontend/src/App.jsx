@@ -23,6 +23,10 @@ import HistoryAchito from './pages/HistoryAchito';
 import CheckAmulet from './pages/CheckAmulet';
 import AmuletCatalog from './pages/AmuletCatalog';
 import PosterPage from './pages/PosterPage';
+import ScamCheck from './pages/ScamCheck';
+import ScamReportNew from './pages/ScamReportNew';
+import MyScamReports from './pages/MyScamReports';
+import AdminScamReports from './pages/AdminScamReports';
 
 function Footer() {
   const { t } = useLang();
@@ -63,7 +67,11 @@ export default function App() {
                   <Route path="/check-amulet" element={<CheckAmulet />} />
                   <Route path="/catalog" element={<AmuletCatalog />} />
                   <Route path="/posters" element={<PosterPage />} />
+                  <Route path="/scam-check" element={<ScamCheck />} />
+                  <Route path="/scam-reports/new" element={<ProtectedRoute><ScamReportNew /></ProtectedRoute>} />
+                  <Route path="/scam-reports/mine" element={<ProtectedRoute><MyScamReports /></ProtectedRoute>} />
                   <Route path="/chat" element={<Chat />} />
+                  <Route path="/admin/scam-reports" element={<ProtectedRoute adminOnly><AdminScamReports /></ProtectedRoute>} />
                   <Route path="/admin/chat" element={<ProtectedRoute adminOnly><AdminChat /></ProtectedRoute>} />
                   <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
                 </Routes>

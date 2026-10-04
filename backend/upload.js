@@ -31,6 +31,9 @@ function uploadErrorHandler(err, req, res, next) {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'File too large. Maximum size is 5MB.' });
   }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ error: 'Too many files or unexpected file field.' });
+  }
   res.status(400).json({ error: err.message });
 }
 

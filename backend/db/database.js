@@ -186,6 +186,41 @@ async function initializeSchema() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS scam_reports (
+      id SERIAL PRIMARY KEY,
+      reporter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      bank_name TEXT NOT NULL,
+      account_number TEXT NOT NULL,
+      account_name TEXT NOT NULL,
+      amount NUMERIC(14,2) NOT NULL CHECK (amount > 0),
+      item_description TEXT NOT NULL,
+      incident_date DATE NOT NULL,
+      details TEXT,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+      admin_note TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS scam_report_images (
+      id SERIAL PRIMARY KEY,
+      report_id INTEGER NOT NULL REFERENCES scam_reports(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      public_id TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+
+  // pg_trgm lets the name search use an index for partial (ILIKE '%...%') matches
+  await pool.query('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_scam_reports_account_number ON scam_reports (account_number)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_scam_reports_account_name ON scam_reports USING GIN (account_name gin_trgm_ops)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_scam_reports_reporter ON scam_reports (reporter_id, created_at)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_scam_report_images_report ON scam_report_images (report_id)');
+
   await pool.query('ALTER TABLE amulets ADD COLUMN IF NOT EXISTS seller_username TEXT');
   await pool.query("UPDATE amulets SET seller_username = 'kanokpon' WHERE seller_username IS NULL");
 
