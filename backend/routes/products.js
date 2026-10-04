@@ -1,24 +1,12 @@
 const express = require('express');
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { createUpload } = require('../upload');
 const cloudinary = require('../cloudinary');
 const { query } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'achito-products',
-    allowed_formats: ['jpeg', 'jpg', 'png', 'webp'],
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
+const upload = createUpload('achito-products');
 
 async function getAmuletWithImages(id) {
   const { rows: [amulet] } = await query(`

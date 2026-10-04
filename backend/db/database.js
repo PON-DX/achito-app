@@ -1,9 +1,22 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not set. Refusing to start without a database.');
+  process.exit(1);
+}
+
+// SSL is on by default (Railway Postgres); off for a local database or DATABASE_SSL=false
+function sslConfig(connectionString) {
+  if (process.env.DATABASE_SSL === 'false') return false;
+  const { hostname } = new URL(connectionString);
+  if (['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname)) return false;
+  return { rejectUnauthorized: false };
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  ssl: sslConfig(process.env.DATABASE_URL),
 });
 
 async function query(sql, params) {
@@ -231,4 +244,4 @@ async function seedSellerProfiles() {
   }
 }
 
-module.exports = { query, getClient, initializeSchema };
+module.exports = { pool, query, getClient, initializeSchema };

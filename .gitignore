@@ -31,3 +31,16 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Python leftovers (Django was removed)
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Local uploads (images are stored in Cloudinary)
+backend/uploads/
+
+# Local-only files
+.claude/settings.local.json
+install.cmd

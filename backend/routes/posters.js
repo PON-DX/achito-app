@@ -1,17 +1,12 @@
 const express = require('express');
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { createUpload } = require('../upload');
 const cloudinary = require('../cloudinary');
 const { query } = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: { folder: 'achito-posters', allowed_formats: ['jpeg', 'jpg', 'png', 'webp'] },
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = createUpload('achito-posters');
 
 function deleteCloudinaryImage(url) {
   if (!url) return;

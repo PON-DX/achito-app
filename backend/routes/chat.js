@@ -1,25 +1,12 @@
 const express = require('express');
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../cloudinary');
+const { createUpload } = require('../upload');
 const { query } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 router.use(authenticateToken);
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'achito-check-amulet',
-    allowed_formats: ['jpeg', 'jpg', 'png', 'webp', 'heic'],
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 15 * 1024 * 1024 },
-});
+const upload = createUpload('achito-check-amulet');
 
 // GET /api/chat/conversation
 router.get('/conversation', async (req, res) => {

@@ -1,17 +1,12 @@
 const express = require('express');
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { createUpload } = require('../upload');
 const cloudinary = require('../cloudinary');
 const { query } = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: { folder: 'achito-catalog', allowed_formats: ['jpeg', 'jpg', 'png', 'webp'] },
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = createUpload('achito-catalog');
 
 const GROUP_ORDER = ['พิมพ์ใหญ่', 'พิมพ์กลาง', 'พิมพ์เล็ก', 'พิมพ์ปิดตา', 'พระประจำวัน', 'เหรียญ', 'ผ้ายันต์'];
 
