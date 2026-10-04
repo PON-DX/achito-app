@@ -45,6 +45,7 @@ export default {
     title: 'Shopping Cart', empty: 'Your cart is empty',
     empty_desc: 'Start adding items to your cart', continue: 'Continue Shopping',
     total: 'Total', checkout: 'Proceed to Checkout', remove: 'Remove', quantity: 'Qty',
+    max_quantity: 'You can order up to {n} of each item', update_failed: 'Could not update quantity',
     order_success: 'Order Placed!', order_number: 'Order Number',
     seller_will_contact: 'Seller will contact you via chat',
     download_summary: 'Download Order Summary (Image)',

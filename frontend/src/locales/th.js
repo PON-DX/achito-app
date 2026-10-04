@@ -45,6 +45,7 @@ export default {
     title: 'ตะกร้าสินค้า', empty: 'ตะกร้าว่างเปล่า',
     empty_desc: 'ยังไม่มีสินค้าในตะกร้า', continue: 'เลือกซื้อสินค้าต่อ',
     total: 'ราคารวม', checkout: 'ชำระเงิน', remove: 'ลบ', quantity: 'จำนวน',
+    max_quantity: 'สั่งได้สูงสุด {n} ชิ้นต่อรายการ', update_failed: 'อัปเดตจำนวนไม่สำเร็จ',
     order_success: 'ส่งออเดอร์สำเร็จ!', order_number: 'หมายเลขออเดอร์',
     seller_will_contact: 'ผู้ขายจะติดต่อกลับในแชท',
     download_summary: 'ดาวน์โหลดสรุปออเดอร์ (รูปภาพ)',

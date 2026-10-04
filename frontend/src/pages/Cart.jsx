@@ -95,6 +95,8 @@ function downloadSummaryCanvas(items, total, orderId) {
   link.click();
 }
 
+const MAX_QUANTITY = 99;
+
 export default function Cart() {
   const { items, total, removeFromCart, updateQuantity, clearCart } = useCart();
   const { user, token } = useAuth();
@@ -105,6 +107,15 @@ export default function Cart() {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(null); // { orderId, convId }
+  const [notice, setNotice] = useState('');
+
+  const showNotice = (msg) => { setNotice(msg); setTimeout(() => setNotice(''), 3000); };
+
+  // Server allows 1–MAX_QUANTITY per item; tell the user instead of failing silently
+  const increase = (item) => {
+    if (item.quantity >= MAX_QUANTITY) { showNotice(t('cart.max_quantity').replace('{n}', MAX_QUANTITY)); return; }
+    updateQuantity(item.id, item.quantity + 1).catch(err => showNotice(err.response?.data?.error || t('cart.update_failed')));
+  };
 
   if (!user) {
     return (
@@ -204,7 +215,7 @@ export default function Cart() {
                   <div className="flex items-center gap-2 rounded-lg px-2 py-1" style={{ background: 'rgba(12,10,3,0.7)' }}>
                     <button onClick={() => item.quantity > 1 ? updateQuantity(item.id, item.quantity - 1) : removeFromCart(item.id)} className="text-cream-muted hover:text-cream w-5 text-center font-bold">−</button>
                     <span className="text-cream text-sm w-6 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-cream-muted hover:text-cream w-5 text-center font-bold">+</button>
+                    <button onClick={() => increase(item)} className={`w-5 text-center font-bold ${item.quantity >= MAX_QUANTITY ? 'text-cream-muted/30 cursor-not-allowed' : 'text-cream-muted hover:text-cream'}`}>+</button>
                   </div>
                   <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-300 text-xs transition-colors">{t('cart.remove')}</button>
                 </div>
@@ -313,6 +324,12 @@ export default function Cart() {
               {t('cart.order_chat_note')}
             </p>
           </div>
+        </div>
+      )}
+      {notice && (
+        <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-sm text-gold"
+          style={{ background: 'rgba(12,9,3,0.97)', border: '1px solid rgba(212,175,55,0.4)', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}>
+          {notice}
         </div>
       )}
     </div>

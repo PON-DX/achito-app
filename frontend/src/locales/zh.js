@@ -45,6 +45,7 @@ export default {
     title: '购物车', empty: '购物车为空',
     empty_desc: '开始添加商品到购物车', continue: '继续购物',
     total: '合计', checkout: '前往结账', remove: '删除', quantity: '数量',
+    max_quantity: '每件商品最多可购买 {n} 件', update_failed: '数量更新失败',
     order_success: '下单成功！', order_number: '订单号',
     seller_will_contact: '卖家将通过聊天与您联系',
     download_summary: '下载订单摘要（图片）',
