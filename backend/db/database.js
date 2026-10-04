@@ -221,8 +221,9 @@ async function initializeSchema() {
   await pool.query('CREATE INDEX IF NOT EXISTS idx_scam_reports_reporter ON scam_reports (reporter_id, created_at)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_scam_report_images_report ON scam_report_images (report_id)');
 
+  // Startup only adds missing structure; it never rewrites existing rows.
+  // (The old one-off seller_username backfill was removed: it ran on every boot.)
   await pool.query('ALTER TABLE amulets ADD COLUMN IF NOT EXISTS seller_username TEXT');
-  await pool.query("UPDATE amulets SET seller_username = 'kanokpon' WHERE seller_username IS NULL");
 
   await seedSellerProfiles();
 
@@ -259,7 +260,7 @@ async function seedSampleAmulets() {
 
   for (const s of samples) {
     await pool.query(
-      'INSERT INTO amulets (name,category,temple,batch_version,year,price,status,description,image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      "INSERT INTO amulets (name,category,temple,batch_version,year,price,status,description,image_url,seller_username) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'kanokpon')",
       s
     );
   }
@@ -274,10 +275,25 @@ async function seedSellerProfiles() {
   ];
   for (const s of sellers) {
     await pool.query(
-      'INSERT INTO seller_profiles (username, facebook_url) VALUES ($1, $2) ON CONFLICT (username) DO UPDATE SET facebook_url = EXCLUDED.facebook_url',
+      'INSERT INTO seller_profiles (username, facebook_url) VALUES ($1, $2) ON CONFLICT (username) DO NOTHING',
       [s.username, s.facebook_url]
     );
   }
 }
 
-module.exports = { pool, query, getClient, initializeSchema };
+const REQUIRED_TABLES = [
+  'users', 'amulets', 'carts', 'orders', 'order_items', 'chat_conversations', 'chat_messages',
+  'site_content', 'monk_history', 'product_images', 'monk_history_images', 'amulet_catalog',
+  'posters', 'seller_profiles', 'scam_reports', 'scam_report_images',
+];
+
+async function findMissingTables(tables) {
+  const { rows } = await pool.query(
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ANY($1)",
+    [tables]
+  );
+  const found = new Set(rows.map(r => r.table_name));
+  return tables.filter(t => !found.has(t));
+}
+
+module.exports = { pool, query, getClient, initializeSchema, findMissingTables, REQUIRED_TABLES };

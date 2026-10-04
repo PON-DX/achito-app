@@ -16,10 +16,8 @@ call npm install
 if %errorlevel% neq 0 ( echo Frontend install failed. & pause & exit /b 1 )
 
 echo.
-echo [3/4] Migrating database and starting backend server on port 5000...
+echo [3/4] Starting backend server on port 5000 (creates database tables on start)...
 cd /d "%~dp0backend"
-call npm run migrate
-if %errorlevel% neq 0 ( echo Database migration failed. & pause & exit /b 1 )
 start "Amulet Shop - Backend" cmd /k "node server.js"
 
 echo.

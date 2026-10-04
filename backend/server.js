@@ -3,7 +3,7 @@ const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-require('./db/database');
+const { initializeSchema, findMissingTables, REQUIRED_TABLES } = require('./db/database');
 const { uploadErrorHandler } = require('./upload');
 
 const authRoutes    = require('./routes/auth');
@@ -58,6 +58,24 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal server error.' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🏮 Achito API running on http://localhost:${PORT}\n`);
-});
+// Create/verify every table before accepting requests. If this fails the process
+// exits, the healthcheck never passes and Railway keeps the previous deployment.
+async function start() {
+  console.log('🗄️  Checking database schema...');
+  try {
+    await initializeSchema();
+    const missing = await findMissingTables(REQUIRED_TABLES);
+    if (missing.length) throw new Error(`Tables still missing after schema init: ${missing.join(', ')}`);
+    console.log(`✅ Database ready: ${REQUIRED_TABLES.length} tables verified.`);
+  } catch (err) {
+    console.error('❌ Database schema initialization failed. Server not started.');
+    console.error(err);
+    process.exit(1);
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🏮 Achito API running on http://localhost:${PORT}\n`);
+  });
+}
+
+start();
